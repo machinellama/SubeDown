@@ -1,0 +1,15 @@
+{
+  "manifest_version": 2,
+  "name": "SubeDown",
+  "version": "0.1",
+  "description": "A completely private and open-source Firefox extension for downloading images and video on webpages",
+  "sidebar_action": {
+    "default_title": "SubeDown",
+    "default_panel": "sidebar.html"
+  },
+  "applications": {
+    "gecko": {
+      "id": "machinellama@gmail.com"
+    }
+  }
+}
