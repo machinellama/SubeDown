@@ -3,7 +3,6 @@ let sidebarPort = null;
 // Listen for messages from the sidebar
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "download-image" && message.img) {
-    console.log("download-image message", message);
     const { url, title, websiteURL } = message.img;
 
     try {
@@ -25,7 +24,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             );
             sendResponse({ error: chrome.runtime.lastError.message });
           } else {
-            console.log(`Download started for ${url}, ID: ${downloadId}`);
             sendResponse({ downloadId });
           }
         }

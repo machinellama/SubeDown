@@ -62,7 +62,6 @@ async function fetchImages() {
   browser.tabs
     .sendMessage(currentTabId, { action: "getImages" })
     .then((response) => {
-      console.log("sendMessage getImages", response);
       imagesData = response.images;
       renderImages();
     })
@@ -144,7 +143,6 @@ function renderImages() {
 }
 
 function downloadImage(img, index) {
-  console.log("downloadImage", { img, index });
   const originalUrl = img.url; // Store the original URL
   let { url, title, websiteURL } = img;
 
@@ -156,8 +154,6 @@ function downloadImage(img, index) {
   }
 
   chrome.runtime.sendMessage({ action: "download-image", img: { url, title, websiteURL } }, (response) => {
-    console.log('download-image response', response);
-
     if (response?.error) {
       console.error(`Failed to download ${url}:`, response.error);
 

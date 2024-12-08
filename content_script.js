@@ -4,7 +4,6 @@ function cleanURLForWindowsFolderName(url) {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "getImages") {
-    console.log("Received 'getImages' request from sidebar.");
     const images = new Map();
 
     // Function to add image to the map to prevent duplicates
@@ -22,7 +21,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const tabURL = window.location.href;
       const websiteURL = cleanURLForWindowsFolderName(tabURL);
 
-      console.log({ url, title, tabURL, websiteURL });
       addImage(url, title, websiteURL);
     });
 
@@ -58,7 +56,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
       });
 
-    console.log(`Found ${images.size} images.`);
     sendResponse({ images: Array.from(images.values()) });
 
     return true; // Indicates asynchronous response
