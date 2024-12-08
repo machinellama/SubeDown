@@ -62,6 +62,7 @@ body {
   cursor: pointer;
   border-radius: 3px;
   transition: background 0.3s;
+  border: 1px solid #696b7a;
 }
 
 #advanced-toggle:hover {
@@ -184,6 +185,7 @@ body {
 .detail-actions-row {
   display: flex;
   justify-content: end;
+  align-items: center;
 }
 
 .detail-title-row {
@@ -248,4 +250,5 @@ body {
 .image-status {
   font-size: 16px;
   margin: 0 0.5rem;
+  padding-top: 0.3rem;
 }
