@@ -145,42 +145,40 @@ function renderImages() {
 
 function downloadImage(img, index) {
   console.log("downloadImage", { img, index });
+  const originalUrl = img.url; // Store the original URL
   let { url, title, websiteURL } = img;
 
   const replaceText = document.getElementById("replace-text").value;
   const withText = document.getElementById("with-text").value;
 
   if (replaceText && withText) {
-    // Replace all occurrences of replaceText with withText in url
     url = url.split(replaceText).join(withText);
   }
 
-  chrome.runtime.sendMessage(
-    { action: "download-image", img: { url, title, websiteURL } },
-    (response) => {
-      console.log("download-image response", response);
+  chrome.runtime.sendMessage({ action: "download-image", img: { url, title, websiteURL } }, (response) => {
+    console.log('download-image response', response);
 
-      if (response?.error) {
-        console.error(`Failed to download ${url}:`, response.error);
+    if (response?.error) {
+      console.error(`Failed to download ${url}:`, response.error);
 
-        if (!downloadFailed.includes(url)) {
-          downloadFailed.push(url);
-        }
-        if (downloadSuccess.includes(url)) {
-          downloadSuccess.splice(downloadSuccess.indexOf(url), 1);
-        }
-      } else {
-        if (!downloadSuccess.includes(url)) {
-          downloadSuccess.push(url);
-        }
-        if (downloadFailed.includes(url)) {
-          downloadFailed.splice(downloadFailed.indexOf(url), 1);
-        }
+      if (!downloadFailed.includes(originalUrl)) {
+        downloadFailed.push(originalUrl);
       }
-
-      updateImageStatus(url);
+      if (downloadSuccess.includes(originalUrl)) {
+        downloadSuccess.splice(downloadSuccess.indexOf(originalUrl), 1);
+      }
+    } else {
+      if (!downloadSuccess.includes(originalUrl)) {
+        downloadSuccess.push(originalUrl);
+      }
+      if (downloadFailed.includes(originalUrl)) {
+        downloadFailed.splice(downloadFailed.indexOf(originalUrl), 1);
+      }
     }
-  );
+
+    // Update the image status using the original URL
+    updateImageStatus(originalUrl);
+  });
 }
 
 function removeImage(index) {
