@@ -69,7 +69,8 @@ body {
   background: #444;
 }
 
-#refresh-images {
+#refresh-images,
+#refresh-videos {
   background: black;
   color: #dfe2ed;
   border: none;
@@ -80,7 +81,8 @@ body {
   transition: background 0.3s;
 }
 
-#download-all {
+#download-all,
+#download-all-videos {
   background: #005711;
   color: #dfe2ed;
   border: none;
@@ -90,7 +92,8 @@ body {
   transition: background 0.3s;
 }
 
-#download-all:hover {
+#download-all:hover,
+#download-all-videos:hover {
   background: #389641;
 }
 
@@ -142,13 +145,15 @@ body {
   background: #2a71bd;
 }
 
-#images-list {
+#images-list,
+#videos-list {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-.image-item {
+.image-item,
+.video-item {
   background: #090b0e;
   color: #dfe2ed;
   padding: 0.4rem 0.8rem;
@@ -159,7 +164,8 @@ body {
   height: 6.5rem;
 }
 
-.image-item img {
+.image-item img,
+.video-item video {
   width: fit-content;
   max-width: 5rem;
   height: fit-content;
@@ -168,15 +174,18 @@ body {
   border: 1px solid #696b7a;
   border-radius: 3px;
   padding: 0.4rem;
+  background: #0d1117;
 }
 
-.image-details {
+.image-details,
+.video-details {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.image-details span {
+.image-details span,
+.video-details span {
   margin-bottom: 5px;
   font-size: 14px;
   word-break: break-all;
@@ -247,8 +256,13 @@ body {
   transition: width 0.3s;
 }
 
-.image-status {
+.image-status,
+.video-status {
   font-size: 16px;
   margin: 0 0.5rem;
   padding-top: 0.3rem;
+}
+
+.progress-text {
+  /* For video MB progress text, defined inline in JS */
 }

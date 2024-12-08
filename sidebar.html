@@ -11,10 +11,10 @@
       <button id="videos-tab">Videos</button>
     </div>
     <div id="content">
+      <!-- Images Section -->
       <div id="images-section">
         <div class="controls">
           <div>Images found: <span id="images-count">0</span></div>
-
           <div class="buttons-row">
             <button id="advanced-toggle">Advanced</button>
             <button id="refresh-images">Refresh</button>
@@ -47,8 +47,18 @@
 
         <div id="images-list"></div>
       </div>
+
+      <!-- Videos Section -->
       <div id="videos-section" style="display: none">
-        <p>Coming soon...</p>
+        <div class="controls">
+          <div>Videos found: <span id="videos-count">0</span></div>
+          <div class="buttons-row">
+            <button id="refresh-videos">Refresh</button>
+            <button id="download-all-videos">Download All</button>
+          </div>
+        </div>
+
+        <div id="videos-list"></div>
       </div>
     </div>
     <script src="sidebar.js"></script>
