@@ -1,15 +1,44 @@
 {
   "manifest_version": 2,
   "name": "SubeDown",
-  "version": "0.1",
-  "description": "A completely private and open-source Firefox extension for downloading images and video on webpages",
+  "version": "0.4",
+  "description": "Download images from the current page",
+  "permissions": [
+    "activeTab",
+    "downloads",
+    "tabs"
+  ],
+  "browser_action": {
+    "default_title": "SubeDown",
+    "default_popup": "sidebar.html"
+  },
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_idle"
+    }
+  ],
   "sidebar_action": {
     "default_title": "SubeDown",
     "default_panel": "sidebar.html"
   },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  },
+  "web_accessible_resources": [
+    "sidebar.html",
+    "sidebar.css",
+    "sidebar.js"
+  ],
   "applications": {
     "gecko": {
-      "id": "machinellama@gmail.com"
+      "id": "subedown@example.com"
     }
   }
 }
