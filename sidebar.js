@@ -1,9 +1,10 @@
-// sidebar.js
-
 let currentTabId;
 let imagesData = [];
 let downloadSuccess = [];
 let downloadFailed = [];
+
+// Advanced settings state
+let advancedVisible = false;
 
 document.getElementById("images-tab").addEventListener("click", () => {
   showSection("images");
@@ -19,6 +20,15 @@ document.getElementById("download-all").addEventListener("click", () => {
 
 document.getElementById("refresh-images").addEventListener("click", () => {
   showSection("images");
+});
+
+document.getElementById("advanced-toggle").addEventListener("click", () => {
+  toggleAdvancedSettings();
+});
+
+document.getElementById("clear-advanced").addEventListener("click", () => {
+  document.getElementById("replace-text").value = "";
+  document.getElementById("with-text").value = "";
 });
 
 function showSection(section) {
@@ -39,6 +49,13 @@ function showSection(section) {
   }
 }
 
+function toggleAdvancedSettings() {
+  advancedVisible = !advancedVisible;
+  document.getElementById("advanced-settings").style.display = advancedVisible
+    ? "block"
+    : "none";
+}
+
 async function fetchImages() {
   let tabs = await browser.tabs.query({ active: true, currentWindow: true });
   let currentTabId = tabs[0].id;
@@ -57,7 +74,7 @@ function renderImages() {
   list.innerHTML = "";
   imagesData.forEach((img, index) => {
     // if list already has img.url, skip
-    if (document.getElementById(`image-item-${img.url}`)) {
+    if (document.getElementById(`image-item-${CSS.escape(img.url)}`)) {
       return;
     }
 
@@ -94,7 +111,7 @@ function renderImages() {
     });
 
     const status = document.createElement("span");
-    status.id = `image-status-${img.url}`;
+    status.id = `image-status-${CSS.escape(img.url)}`;
     status.className = "image-status";
 
     const progressContainer = document.createElement("div");
@@ -128,31 +145,42 @@ function renderImages() {
 
 function downloadImage(img, index) {
   console.log("downloadImage", { img, index });
-  const { url, title, websiteURL } = img;
+  let { url, title, websiteURL } = img;
 
-  chrome.runtime.sendMessage({ action: "download-image", img }, (response) => {
-    console.log("download-image response", response);
+  const replaceText = document.getElementById("replace-text").value;
+  const withText = document.getElementById("with-text").value;
 
-    if (response?.error) {
-      console.error(`Failed to download ${url}:`, response.error);
+  if (replaceText && withText) {
+    // Replace all occurrences of replaceText with withText in url
+    url = url.split(replaceText).join(withText);
+  }
 
-      if (!downloadFailed.includes(url)) {
-        downloadFailed.push(url);
+  chrome.runtime.sendMessage(
+    { action: "download-image", img: { url, title, websiteURL } },
+    (response) => {
+      console.log("download-image response", response);
+
+      if (response?.error) {
+        console.error(`Failed to download ${url}:`, response.error);
+
+        if (!downloadFailed.includes(url)) {
+          downloadFailed.push(url);
+        }
+        if (downloadSuccess.includes(url)) {
+          downloadSuccess.splice(downloadSuccess.indexOf(url), 1);
+        }
+      } else {
+        if (!downloadSuccess.includes(url)) {
+          downloadSuccess.push(url);
+        }
+        if (downloadFailed.includes(url)) {
+          downloadFailed.splice(downloadFailed.indexOf(url), 1);
+        }
       }
-      if (downloadSuccess.includes(url)) {
-        downloadSuccess.splice(downloadSuccess.indexOf(url), 1);
-      }
-    } else {
-      if (!downloadSuccess.includes(url)) {
-        downloadSuccess.push(url);
-      }
-      if (downloadFailed.includes(url)) {
-        downloadFailed.splice(downloadFailed.indexOf(url), 1);
-      }
+
+      updateImageStatus(url);
     }
-
-    updateImageStatus(url);
-  });
+  );
 }
 
 function removeImage(index) {
@@ -167,7 +195,9 @@ function downloadAllImages() {
 }
 
 function updateImageStatus(url) {
-  const imageStatus = document.getElementById(`image-status-${url}`);
+  const imageStatus = document.getElementById(
+    `image-status-${CSS.escape(url)}`
+  );
   if (!imageStatus) {
     return;
   }

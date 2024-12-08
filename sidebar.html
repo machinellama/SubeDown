@@ -15,11 +15,36 @@
         <div class="controls">
           <div>Images found: <span id="images-count">0</span></div>
 
-          <div>
+          <div class="buttons-row">
+            <button id="advanced-toggle">Advanced</button>
             <button id="refresh-images">Refresh</button>
             <button id="download-all">Download All</button>
           </div>
         </div>
+
+        <div id="advanced-settings" style="display: none">
+          <div class="advanced-header">Replace</div>
+          <div class="advanced-row">
+            <label for="replace-text">replace</label>
+            <input
+              type="text"
+              id="replace-text"
+              placeholder="e.g. http://oldsite.com/"
+            />
+          </div>
+          <div class="advanced-row">
+            <label for="with-text">with</label>
+            <input
+              type="text"
+              id="with-text"
+              placeholder="e.g. http://newsite.com/"
+            />
+          </div>
+          <div class="advanced-row">
+            <button id="clear-advanced">Clear</button>
+          </div>
+        </div>
+
         <div id="images-list"></div>
       </div>
       <div id="videos-section" style="display: none">

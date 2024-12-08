@@ -1,5 +1,3 @@
-// content_script.js
-
 function cleanURLForWindowsFolderName(url) {
   return url.replace(/[<>:"/\\|?*]/g, "-");
 }
@@ -19,25 +17,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Check <img> elements
     document.querySelectorAll("img").forEach((el) => {
       const url = el.src || el.getAttribute("data-src");
-      // get title from the end of the url
-      const parts = url.split("/");
-      title = parts[parts.length - 1];
-
+      const parts = (url || "").split("/");
+      const title = parts[parts.length - 1] || "untitled";
       const tabURL = window.location.href;
       const websiteURL = cleanURLForWindowsFolderName(tabURL);
 
       console.log({ url, title, tabURL, websiteURL });
-
       addImage(url, title, websiteURL);
     });
 
-    // Check elements with src attribute (e.g., <source> tags)
+    // Check elements with src attribute
     document.querySelectorAll("[src]").forEach((el) => {
       const url = el.getAttribute("src");
-      addImage(url, "");
+      if (url) {
+        const parts = url.split("/");
+        const title = parts[parts.length - 1] || "untitled";
+        const tabURL = window.location.href;
+        const websiteURL = cleanURLForWindowsFolderName(tabURL);
+        addImage(url, title, websiteURL);
+      }
     });
 
-    // Check elements with background-image in styles
+    // Check background images
     document
       .querySelectorAll("div, span, section, header, footer, a, li, p")
       .forEach((el) => {
@@ -47,7 +48,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (bg && bg !== "none") {
           const match = bg.match(/url\(["']?(.*?)["']?\)/);
           if (match && isImageUrl(match[1])) {
-            addImage(match[1], "");
+            const url = match[1];
+            const parts = url.split("/");
+            const title = parts[parts.length - 1] || "untitled";
+            const tabURL = window.location.href;
+            const websiteURL = cleanURLForWindowsFolderName(tabURL);
+            addImage(url, title, websiteURL);
           }
         }
       });

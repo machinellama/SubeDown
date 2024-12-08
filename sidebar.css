@@ -1,5 +1,3 @@
-/* sidebar.css */
-
 body {
   font-family: Arial, sans-serif;
   background: #090b0e;
@@ -51,6 +49,25 @@ body {
   align-items: center;
 }
 
+.buttons-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#advanced-toggle {
+  background: black;
+  color: #dfe2ed;
+  border: none;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+
+#advanced-toggle:hover {
+  background: #444;
+}
+
 #refresh-images {
   background: black;
   color: #dfe2ed;
@@ -74,6 +91,54 @@ body {
 
 #download-all:hover {
   background: #389641;
+}
+
+#advanced-settings {
+  background: #0d1117;
+  border: 1px solid #696b7a;
+  border-radius: 3px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.advanced-header {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.advanced-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.advanced-row label {
+  width: 50px;
+  text-align: right;
+}
+
+.advanced-row input {
+  flex: 1;
+  padding: 0.3rem;
+  border-radius: 3px;
+  border: 1px solid #696b7a;
+  background: #1b1f24;
+  color: #dfe2ed;
+}
+
+#clear-advanced {
+  background: #1a5296;
+  color: #dfe2ed;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+
+#clear-advanced:hover {
+  background: #2a71bd;
 }
 
 #images-list {

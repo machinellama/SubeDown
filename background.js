@@ -1,5 +1,3 @@
-// background.js
-
 let sidebarPort = null;
 
 // Listen for messages from the sidebar
@@ -17,7 +15,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         {
           url,
           filename: downloadPath,
-          conflictAction: "overwrite", // Overwrite existing file with the same name
+          conflictAction: "overwrite",
         },
         (downloadId) => {
           if (chrome.runtime.lastError) {
