@@ -66,7 +66,7 @@ body {
 }
 
 #advanced-toggle:hover {
-  background: #444;
+  background: #0d1117;
 }
 
 #refresh-images,
@@ -79,6 +79,11 @@ body {
   border-radius: 3px;
   border: 1px solid #696b7a;
   transition: background 0.3s;
+}
+
+#refresh-images:hover,
+#refresh-videos:hover {
+  background: #0d1117;
 }
 
 #download-all,
