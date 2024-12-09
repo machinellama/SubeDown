@@ -1,3 +1,5 @@
+// sidebar.js
+
 let currentTabId;
 let imagesData = [];
 let downloadSuccess = [];
@@ -6,6 +8,7 @@ let downloadFailed = [];
 // Advanced settings state
 let advancedVisible = false;
 
+// Event Listeners for Tabs
 document.getElementById("images-tab").addEventListener("click", () => {
   showSection("images");
 });
@@ -14,6 +17,7 @@ document.getElementById("videos-tab").addEventListener("click", () => {
   showSection("videos");
 });
 
+// Event Listeners for Buttons
 document.getElementById("download-all").addEventListener("click", () => {
   downloadAllImages();
 });
@@ -39,6 +43,9 @@ document.getElementById("clear-advanced").addEventListener("click", () => {
   // Clear size filters
   document.getElementById("min-size").value = "";
   document.getElementById("max-size").value = "";
+
+  // Clear URL filter
+  document.getElementById("url-filter").value = "";
 });
 
 // Function to get selected image types
@@ -64,6 +71,11 @@ function getSizeFilters() {
   }
 
   return { min, max };
+}
+
+// Function to get URL filter
+function getURLFilter() {
+  return document.getElementById("url-filter").value.trim().toLowerCase();
 }
 
 // Function to fetch image size in MB
@@ -118,45 +130,78 @@ function toggleAdvancedSettings() {
 // Function to fetch images with applied filters
 async function fetchImages() {
   try {
-    let tabs = await browser.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
-    let currentTabId = tabs[0].id;
-    const response = await browser.tabs.sendMessage(currentTabId, {
-      action: "getImages",
-    });
-
-    let images = response.images;
-
-    console.log('fetchImages response', response);
-
-    // Apply image type filter
-    const selectedTypes = getSelectedImageTypes();
-    images = images.filter((img) => {
-      const lowerUrl = img.url.toLowerCase();
-      return selectedTypes.some((type) => lowerUrl.includes(type));
-    });
-
-    // Apply size filter
-    const { min, max } = getSizeFilters();
-    if (min !== null || max !== null) {
-      const filteredImages = [];
-      for (let img of images) {
-        const sizeMB = await getImageSize(img.url);
-        img.sizeMB = sizeMB;
-        if (sizeMB !== null) {
-          if (min !== null && sizeMB < min) continue;
-          if (max !== null && sizeMB > max) continue;
+    chrome.tabs.query(
+      { active: true, currentWindow: true },
+      async (tabs) => {
+        if (!tabs || tabs.length === 0) {
+          console.error("No active tab found.");
+          return;
         }
-        filteredImages.push(img);
-      }
-      imagesData = filteredImages;
-    } else {
-      imagesData = images;
-    }
+        let currentTabId = tabs[0].id;
+        chrome.tabs.sendMessage(currentTabId, {
+          action: "getImages",
+        }, async (response) => {
+          if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError.message);
+            return;
+          }
 
-    renderImages();
+          if (!response || !response.images) {
+            console.error("No images found in the response.");
+            return;
+          }
+
+          let images = response.images;
+
+          console.log('fetchImages response', response);
+
+          // Apply Replace Text
+          const replaceText = document.getElementById("replace-text").value;
+          const withText = document.getElementById("with-text").value;
+          if (replaceText && withText) {
+            images = images.map(img => ({
+              ...img,
+              url: img.url.split(replaceText).join(withText)
+            }));
+          }
+
+          // Apply image type filter
+          const selectedTypes = getSelectedImageTypes();
+          images = images.filter((img) => {
+            const lowerUrl = img.url.toLowerCase();
+            return selectedTypes.some((type) => lowerUrl.endsWith(type));
+          });
+
+          // Apply URL filter
+          const urlFilter = getURLFilter();
+          if (urlFilter) {
+            images = images.filter((img) =>
+              img.url.toLowerCase().includes(urlFilter)
+            );
+          }
+
+          // Apply size filter
+          const { min, max } = getSizeFilters();
+          if (min !== null || max !== null) {
+            const filteredImages = [];
+            for (let img of images) {
+              const sizeMB = await getImageSize(img.url);
+              img.sizeMB = sizeMB;
+              if (sizeMB !== null) {
+                if (min !== null && sizeMB < min) continue;
+                if (max !== null && sizeMB > max) continue;
+              }
+              filteredImages.push(img);
+            }
+            imagesData = filteredImages;
+          } else {
+            imagesData = images;
+          }
+
+          renderImages();
+        });
+      }
+    );
   } catch (error) {
     console.error(error);
   }
@@ -173,7 +218,7 @@ function renderImages() {
 
     const item = document.createElement("div");
     item.className = "image-item";
-    item.id = `image-item-${img.url}`;
+    item.id = `image-item-${CSS.escape(img.url)}`;
 
     const thumb = document.createElement("img");
     thumb.src = img.url;
@@ -254,7 +299,18 @@ function downloadImageMessage(img, index) {
   chrome.runtime.sendMessage(
     { action: "download-image", img: { url } },
     (response) => {
-      if (response?.error) {
+      if (chrome.runtime.lastError) {
+        console.error(`Failed to download ${url}:`, chrome.runtime.lastError);
+        if (!downloadFailed.includes(originalUrl)) {
+          downloadFailed.push(originalUrl);
+        }
+        if (downloadSuccess.includes(originalUrl)) {
+          downloadSuccess.splice(
+            downloadSuccess.indexOf(originalUrl),
+            1
+          );
+        }
+      } else if (response?.error) {
         console.error(`Failed to download ${url}:`, response.error);
 
         if (!downloadFailed.includes(originalUrl)) {
