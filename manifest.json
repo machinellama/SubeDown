@@ -4,22 +4,34 @@
   "version": "0.4",
   "description": "Download images from the current page",
   "permissions": [
-    "activeTab",
     "downloads",
-    "tabs"
+    "activeTab",
+    "tabs",
+    "scripting",
+    "webRequest",
+    "webRequestBlocking",
+    "<all_urls>"
   ],
   "browser_action": {
     "default_title": "SubeDown",
     "default_popup": "sidebar.html"
   },
   "background": {
-    "scripts": ["background.js"],
+    "scripts": [
+      "./util/clean-url.js",
+      "./util/download-image.js",
+      "background.js"
+    ],
     "persistent": false
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content_script.js"],
+      "js": [
+        "./util/clean-url.js",
+        "./util/find-images.js",
+        "content_script.js"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -34,6 +46,7 @@
   "web_accessible_resources": [
     "sidebar.html",
     "sidebar.css",
+    "./util/clean-url.js",
     "sidebar.js"
   ],
   "applications": {
