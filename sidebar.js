@@ -244,7 +244,7 @@ function renderImages() {
 
     const title = document.createElement("span");
     const parts = img.url.split("/");
-    const titleName = parts[parts.length - 1] || "No title";
+    const titleName = cleanURL(parts[parts.length - 1] || "No title", true);
     title.textContent = titleName;
 
     const removeIcon = document.createElement("span");
