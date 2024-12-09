@@ -1,27 +1,47 @@
-function downloadImage(url, sendResponse) {
+// download-image.js
+
+/**
+ * Downloads an image from the given URL.
+ * If filenameOverride is provided, uses it as the filename.
+ * Otherwise, constructs the filename based on the URL and current tab.
+ *
+ * @param {string} url - The URL of the image to download.
+ * @param {string|null} filenameOverride - The overridden filename, if any.
+ * @param {function} sendResponse - The callback to send the response.
+ */
+function downloadImage(url, filenameOverride, sendResponse) {
   try {
-    browser.tabs.query({ active: true, currentWindow: true }).then((tabs) => {
-      const parts = url.split("/");
-      const title = parts[parts.length - 1] || `image-${Date.now()}.jpg`;
-      const cleanedTitle = cleanURL(title, true);
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs || tabs.length === 0) {
+        console.error("No active tab found.");
+        sendResponse({ error: "No active tab found." });
+        return;
+      }
 
       const currentTab = tabs[0];
       const tabURL = currentTab.url.split("?")[0];
       const cleanedPart = cleanURL(tabURL, true);
       const folderName = cleanedPart || "images";
 
-      const downloadPath = `${folderName}/${cleanedTitle}`;
+      let downloadPath;
+
+      if (filenameOverride) {
+        // Use the overridden filename provided by the sidebar
+        downloadPath = `${folderName}/${filenameOverride}`;
+      } else {
+        // Existing logic to construct filename based on URL
+        const parts = url.split("/");
+        const title = parts[parts.length - 1] || `image-${Date.now()}.jpg`;
+        const cleanedTitle = cleanURL(title, true);
+        downloadPath = `${folderName}/${cleanedTitle}`;
+      }
 
       console.log({
         url,
-        title,
-        cleanedTitle,
-        currentTab,
-        tabURL,
-        cleanedPart,
+        filenameOverride,
         folderName,
         downloadPath
-      })
+      });
 
       chrome.downloads.download(
         {
@@ -43,6 +63,7 @@ function downloadImage(url, sendResponse) {
       );
     });
 
+    // Indicate that the response will be sent asynchronously
     return true;
   } catch (error) {
     console.error(`Error processing download for ${url}:`, error);

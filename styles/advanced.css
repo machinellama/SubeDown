@@ -23,11 +23,21 @@
 
 .advanced-header {
   font-weight: bold;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
+  margin-top: 0.6rem;
 }
 
 .block {
   display: block;
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-section {
+  margin-right: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .advanced-row {

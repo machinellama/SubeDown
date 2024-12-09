@@ -1,3 +1,5 @@
+// find-images.js
+
 function findImages(doc, imagesMap) {
   function addImage(url) {
     url = url.trim();

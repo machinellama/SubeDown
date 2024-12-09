@@ -1,10 +1,14 @@
 let sidebarPort = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "download-image" && message.img) {
-    const { url } = message.img;
+  if (message.action === "download-image" && message.img && message.img.url) {
+    const url = message.img.url;
+    const filenameOverride = message.img.filename; // This includes the base filename with index and extension
 
-    downloadImage(url, sendResponse);
+    downloadImage(url, filenameOverride, sendResponse);
+
+    // Indicate that the response will be sent asynchronously
+    return true;
   }
 });
 

@@ -46,6 +46,9 @@ document.getElementById("clear-advanced").addEventListener("click", () => {
 
   // Clear URL filter
   document.getElementById("url-filter").value = "";
+
+  // Clear File Name Override
+  document.getElementById("filename-override").value = "";
 });
 
 // Function to get selected image types
@@ -76,6 +79,12 @@ function getSizeFilters() {
 // Function to get URL filter
 function getURLFilter() {
   return document.getElementById("url-filter").value.trim().toLowerCase();
+}
+
+// Function to get File Name Override
+function getFilenameOverride() {
+  const override = document.getElementById("filename-override").value.trim();
+  return override.length > 0 ? override : null;
 }
 
 // Function to fetch image size in MB
@@ -295,8 +304,26 @@ function downloadImageMessage(img, index) {
     url = url.split(replaceText).join(withText);
   }
 
+  // Get the File Name Override value
+  const filenameOverride = getFilenameOverride();
+  let filename = null;
+
+  if (filenameOverride) {
+    // Extract the file extension from the URL
+    const urlParts = url.split("/");
+    const lastPart = urlParts[urlParts.length - 1];
+    const dotIndex = lastPart.lastIndexOf(".");
+    let extension = "";
+    if (dotIndex !== -1) {
+      extension = lastPart.substring(dotIndex);
+    }
+
+    // Construct the new filename
+    filename = `${filenameOverride}-${index + 1}${extension}`;
+  }
+
   chrome.runtime.sendMessage(
-    { action: "download-image", img: { url } },
+    { action: "download-image", img: { url, filename } },
     (response) => {
       if (chrome.runtime.lastError) {
         console.error(`Failed to download ${url}:`, chrome.runtime.lastError);
