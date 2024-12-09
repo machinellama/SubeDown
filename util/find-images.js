@@ -6,6 +6,8 @@ function findImages(doc, imagesMap) {
     }
   }
 
+  console.log('doc.querySelectorAll("img")', doc.querySelectorAll("img"));
+
   doc.querySelectorAll("img").forEach((el) => {
     const url = el.src || el.getAttribute("data-src");
     if (url) {
@@ -52,8 +54,19 @@ function findImages(doc, imagesMap) {
 }
 
 function isImageUrl(url) {
-  const validTypes = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"];
+  console.log("testing isImageUrl", url);
+  const validTypes = [
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".bmp",
+    ".svg",
+  ];
 
-  // check if the URL has any valid type anywhere in the url
-  return validTypes.some((type) => url.includes(type));
+  console.log('isvalid: ', validTypes.some((type) => url.toLowerCase().includes(type)));
+
+  // Check if the URL ends with any valid image type
+  return validTypes.some((type) => url.toLowerCase().includes(type));
 }

@@ -1,5 +1,3 @@
-// content_script.js
-
 // Listen for requests from sidebar or other parts of the extension
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "getImages") {

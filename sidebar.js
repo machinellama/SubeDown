@@ -10,6 +10,10 @@ document.getElementById("images-tab").addEventListener("click", () => {
   showSection("images");
 });
 
+document.getElementById("videos-tab").addEventListener("click", () => {
+  showSection("videos");
+});
+
 document.getElementById("download-all").addEventListener("click", () => {
   downloadAllImages();
 });
@@ -25,21 +29,85 @@ document.getElementById("advanced-toggle").addEventListener("click", () => {
 document.getElementById("clear-advanced").addEventListener("click", () => {
   document.getElementById("replace-text").value = "";
   document.getElementById("with-text").value = "";
+
+  // Reset image type checkboxes to checked
+  const checkboxes = document.querySelectorAll(
+    '#advanced-settings .checkbox-group input[type="checkbox"]'
+  );
+  checkboxes.forEach((cb) => (cb.checked = true));
+
+  // Clear size filters
+  document.getElementById("min-size").value = "";
+  document.getElementById("max-size").value = "";
 });
 
-function showSection(section) {
-  document.getElementById("images-section").style.display =
-    section === "images" ? "block" : "none";
+// Function to get selected image types
+function getSelectedImageTypes() {
+  const checkboxes = document.querySelectorAll(
+    '#advanced-settings .checkbox-group input[type="checkbox"]'
+  );
+  return Array.from(checkboxes)
+    .filter((cb) => cb.checked)
+    .map((cb) => cb.value.toLowerCase());
+}
 
-  document
-    .getElementById("images-tab")
-    .classList.toggle("active", section === "images");
+// Function to get size filters
+function getSizeFilters() {
+  const minInput = parseFloat(document.getElementById("min-size").value);
+  const maxInput = parseFloat(document.getElementById("max-size").value);
 
+  const min = !isNaN(minInput) && minInput >= 0 ? minInput : null;
+  const max = !isNaN(maxInput) && maxInput >= 0 ? maxInput : null;
+
+  if (min !== null && max !== null && min > max) {
+    return { min: null, max: null };
+  }
+
+  return { min, max };
+}
+
+// Function to fetch image size in MB
+async function getImageSize(url) {
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    if (response.ok) {
+      const size = response.headers.get("Content-Length");
+      if (size) {
+        return parseInt(size, 10) / (1024 * 1024); // Convert to MB
+      }
+    }
+  } catch (e) {
+    console.warn(`Could not fetch size for ${url}:`, e);
+  }
+  return null;
+}
+
+// Function to show sections
+async function showSection(section) {
   if (section === "images") {
-    fetchImages();
+    document.getElementById("images-section").style.display = "block";
+    document.getElementById("videos-section").style.display = "none";
+    document
+      .getElementById("images-tab")
+      .classList.add("active");
+    document
+      .getElementById("videos-tab")
+      .classList.remove("active");
+    await fetchImages();
+  } else if (section === "videos") {
+    document.getElementById("images-section").style.display = "none";
+    document.getElementById("videos-section").style.display = "block";
+    document
+      .getElementById("images-tab")
+      .classList.remove("active");
+    document
+      .getElementById("videos-tab")
+      .classList.add("active");
+    // Future implementation for videos
   }
 }
 
+// Function to toggle advanced settings
 function toggleAdvancedSettings() {
   advancedVisible = !advancedVisible;
   document.getElementById("advanced-settings").style.display = advancedVisible
@@ -47,18 +115,54 @@ function toggleAdvancedSettings() {
     : "none";
 }
 
+// Function to fetch images with applied filters
 async function fetchImages() {
-  let tabs = await browser.tabs.query({ active: true, currentWindow: true });
-  let currentTabId = tabs[0].id;
-  browser.tabs
-    .sendMessage(currentTabId, { action: "getImages" })
-    .then((response) => {
-      imagesData = response.images;
-      renderImages();
-    })
-    .catch((error) => console.error(error));
+  try {
+    let tabs = await browser.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    let currentTabId = tabs[0].id;
+    const response = await browser.tabs.sendMessage(currentTabId, {
+      action: "getImages",
+    });
+
+    let images = response.images;
+
+    console.log('fetchImages response', response);
+
+    // Apply image type filter
+    const selectedTypes = getSelectedImageTypes();
+    images = images.filter((img) => {
+      const lowerUrl = img.url.toLowerCase();
+      return selectedTypes.some((type) => lowerUrl.includes(type));
+    });
+
+    // Apply size filter
+    const { min, max } = getSizeFilters();
+    if (min !== null || max !== null) {
+      const filteredImages = [];
+      for (let img of images) {
+        const sizeMB = await getImageSize(img.url);
+        img.sizeMB = sizeMB;
+        if (sizeMB !== null) {
+          if (min !== null && sizeMB < min) continue;
+          if (max !== null && sizeMB > max) continue;
+        }
+        filteredImages.push(img);
+      }
+      imagesData = filteredImages;
+    } else {
+      imagesData = images;
+    }
+
+    renderImages();
+  } catch (error) {
+    console.error(error);
+  }
 }
 
+// Function to render images
 function renderImages() {
   const list = document.getElementById("images-list");
   list.innerHTML = "";
@@ -131,9 +235,11 @@ function renderImages() {
     updateImageStatus(img.url);
   });
 
-  document.getElementById("images-count").textContent = imagesData.length || 0;
+  document.getElementById("images-count").textContent =
+    imagesData.length || 0;
 }
 
+// Function to handle image download
 function downloadImageMessage(img, index) {
   const originalUrl = img.url;
   let { url } = img;
@@ -155,14 +261,20 @@ function downloadImageMessage(img, index) {
           downloadFailed.push(originalUrl);
         }
         if (downloadSuccess.includes(originalUrl)) {
-          downloadSuccess.splice(downloadSuccess.indexOf(originalUrl), 1);
+          downloadSuccess.splice(
+            downloadSuccess.indexOf(originalUrl),
+            1
+          );
         }
       } else {
         if (!downloadSuccess.includes(originalUrl)) {
           downloadSuccess.push(originalUrl);
         }
         if (downloadFailed.includes(originalUrl)) {
-          downloadFailed.splice(downloadFailed.indexOf(originalUrl), 1);
+          downloadFailed.splice(
+            downloadFailed.indexOf(originalUrl),
+            1
+          );
         }
       }
       updateImageStatus(originalUrl);
@@ -170,17 +282,20 @@ function downloadImageMessage(img, index) {
   );
 }
 
+// Function to remove an image from the list
 function removeImage(index) {
   imagesData.splice(index, 1);
   renderImages();
 }
 
+// Function to download all images
 async function downloadAllImages() {
-  imagesData.forEach((img, i) => {
-    downloadImageMessage(img, i);
-  });
+  for (let i = 0; i < imagesData.length; i++) {
+    await downloadImageMessage(imagesData[i], i);
+  }
 }
 
+// Function to update image download status
 function updateImageStatus(url) {
   const imageStatus = document.getElementById(
     `image-status-${CSS.escape(url)}`
@@ -199,10 +314,17 @@ function updateImageStatus(url) {
 
   if (status === "success") {
     imageStatus.textContent = "✓";
+    imageStatus.style.color = "green";
   }
 
   if (status === "failed") {
     imageStatus.textContent = "✕";
+    imageStatus.style.color = "red";
+  }
+
+  if (status === "pending") {
+    imageStatus.textContent = "⌛";
+    imageStatus.style.color = "orange";
   }
 }
 
