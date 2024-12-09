@@ -6,8 +6,6 @@ function findImages(doc, imagesMap) {
     }
   }
 
-  console.log('doc.querySelectorAll("img")', doc.querySelectorAll("img"));
-
   doc.querySelectorAll("img").forEach((el) => {
     const url = el.src || el.getAttribute("data-src");
     if (url) {
@@ -64,8 +62,6 @@ function isImageUrl(url) {
     ".bmp",
     ".svg",
   ];
-
-  console.log('isvalid: ', validTypes.some((type) => url.toLowerCase().includes(type)));
 
   // Check if the URL ends with any valid image type
   return validTypes.some((type) => url.toLowerCase().includes(type));

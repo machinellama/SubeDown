@@ -169,7 +169,7 @@ async function fetchImages() {
           const selectedTypes = getSelectedImageTypes();
           images = images.filter((img) => {
             const lowerUrl = img.url.toLowerCase();
-            return selectedTypes.some((type) => lowerUrl.endsWith(type));
+            return selectedTypes.some((type) => lowerUrl.includes(type));
           });
 
           // Apply URL filter
@@ -234,8 +234,7 @@ function renderImages() {
     titleRow.className = "detail-title-row";
 
     const title = document.createElement("span");
-    const cleanedURL = cleanURL(img.url, true);
-    const parts = cleanedURL.split("/");
+    const parts = img.url.split("/");
     const titleName = parts[parts.length - 1] || "No title";
     title.textContent = titleName;
 
