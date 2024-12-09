@@ -1,7 +1,6 @@
 function findImages(doc, imagesMap) {
-  const tabURL = doc.defaultView.location.href;
-
   function addImage(url) {
+    url = url.trim();
     if (url && isImageUrl(url) && !imagesMap.has(url)) {
       imagesMap.set(url, { url });
     }
@@ -53,15 +52,7 @@ function findImages(doc, imagesMap) {
 }
 
 function isImageUrl(url) {
-  const validTypes = [
-    '.png',
-    '.jpg',
-    '.jpeg',
-    '.gif',
-    '.webp',
-    '.bmp',
-    '.svg',
-  ];
+  const validTypes = [".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp", ".svg"];
 
   // check if the URL has any valid type anywhere in the url
   return validTypes.some((type) => url.includes(type));

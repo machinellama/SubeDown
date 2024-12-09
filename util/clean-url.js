@@ -10,6 +10,9 @@ function cleanURL(url, removeQuery = false) {
   // replace invalid characters with dashes
   newURL = newURL.replace(/[<>:"/\\|?*]/g, "-");
 
+  // replace all spaces with dashes
+  newURL = newURL.replace(/\s/g, "-");
+
   // replace multiple dashes with a single dash
   newURL = newURL.replace(/-+/g, "-");
 
@@ -21,6 +24,9 @@ function cleanURL(url, removeQuery = false) {
 
   // replace any starting or trailing dashes with empty string
   newURL = newURL.replace(/^-|-$/g, "");
+
+  // remove period at end
+  newURL = newURL.replace(/\.$/, "");
 
   return newURL;
 }
