@@ -36,13 +36,6 @@ function downloadImage(url, filenameOverride, foldernameOverride, sendResponse) 
         downloadPath = `${folderName}/${cleanedTitle}`;
       }
 
-      console.log({
-        url,
-        filenameOverride,
-        folderName,
-        downloadPath
-      });
-
       chrome.downloads.download(
         {
           url,

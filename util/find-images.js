@@ -54,7 +54,6 @@ function findImages(doc, imagesMap) {
 }
 
 function isImageUrl(url) {
-  console.log("testing isImageUrl", url);
   const validTypes = [
     ".png",
     ".jpg",

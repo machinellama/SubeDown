@@ -265,8 +265,6 @@ async function fetchImages() {
 
           let images = response.images;
 
-          console.log('fetchImages response', response);
-
           // Apply Replace Texts
           const replaceWithPairs = getReplaceWithPairs();
           replaceWithPairs.forEach(pair => {
@@ -428,9 +426,13 @@ function downloadImageMessage(img, index) {
 
   // Check if Remove Queries is checked
   if (shouldRemoveQueries()) {
-    const urlObj = new URL(url);
-    urlObj.search = "";
-    url = urlObj.toString();
+    try {
+      const urlObj = new URL(url);
+      urlObj.search = "";
+      url = urlObj.toString();
+    } catch (e) {
+      console.warn(`Invalid URL for removing queries: ${url}`, e);
+    }
   }
 
   chrome.runtime.sendMessage(
@@ -523,3 +525,116 @@ function updateImageStatus(url) {
 
 // Initialize by showing the images section
 showSection("images");
+
+// --- New Feature: Download from Multiple Pages ---
+
+// Event Listener for Start Multi-Page Download
+document.getElementById("start-multi-download").addEventListener("click", () => {
+  startMultiPageDownload();
+});
+
+// Function to start downloading images from multiple pages using fetch
+async function startMultiPageDownload() {
+  const urlTemplate = document.getElementById("url-template").value.trim();
+  const startNumber = parseInt(document.getElementById("start-number").value, 10);
+  const endNumber = parseInt(document.getElementById("end-number").value, 10);
+  const statusDiv = document.getElementById("multi-download-status");
+
+  // Input Validation
+  if (!urlTemplate.includes("{{number}}")) {
+    alert('URL Template must include "{{number}}" placeholder.');
+    return;
+  }
+
+  if (isNaN(startNumber) || isNaN(endNumber) || startNumber > endNumber) {
+    alert("Please enter valid start and end numbers.");
+    return;
+  }
+
+  // Disable the start button to prevent multiple clicks
+  const startButton = document.getElementById("start-multi-download");
+  startButton.disabled = true;
+  statusDiv.textContent = "Starting multi-page download...";
+
+  for (let i = startNumber; i <= endNumber; i++) {
+    const currentURL = urlTemplate.replace("{{number}}", i);
+    statusDiv.textContent = `Processing page ${i}: ${currentURL}`;
+
+    try {
+      // Fetch the page content
+      const response = await fetch(currentURL);
+      if (!response.ok) {
+        console.error(`Failed to fetch ${currentURL}: ${response.statusText}`);
+        continue;
+      }
+
+      const htmlText = await response.text();
+
+      // Parse the HTML to extract image URLs
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlText, "text/html");
+      const imgElements = doc.images;
+      let images = Array.from(imgElements).map(img => ({
+        url: img.src
+      }));
+
+      if (images.length === 0) {
+        continue;
+      }
+
+      // Apply existing advanced settings filters to the images
+      let filteredImages = applyAdvancedFilters(images);
+
+      // Render the images in the sidebar
+      imagesData = imagesData.concat(filteredImages);
+      renderImages();
+
+      // Download the images
+      for (let j = 0; j < filteredImages.length; j++) {
+        await downloadImageMessage(filteredImages[j], imagesData.length - filteredImages.length + j);
+      }
+    } catch (error) {
+      console.error(`Error processing page ${currentURL}:`, error);
+      continue;
+    }
+  }
+
+  statusDiv.textContent = "Multi-page download completed.";
+  startButton.disabled = false;
+}
+
+// Function to apply advanced filters to images
+function applyAdvancedFilters(images) {
+  let filtered = images.slice();
+
+  // Apply Replace Texts
+  const replaceWithPairs = getReplaceWithPairs();
+  replaceWithPairs.forEach(pair => {
+    filtered = filtered.map(img => ({
+      ...img,
+      url: img.url.split(pair.replace).join(pair.with)
+    }));
+  });
+
+  // Apply image type filter
+  const selectedTypes = getSelectedImageTypes();
+  filtered = filtered.filter((img) => {
+    const lowerUrl = img.url.toLowerCase();
+    return selectedTypes.some((type) => lowerUrl.includes(type));
+  });
+
+  // Apply URL filter
+  const urlFilter = getURLFilter();
+  if (urlFilter) {
+    filtered = filtered.filter((img) =>
+      img.url.toLowerCase().includes(urlFilter)
+    );
+  }
+
+  // Apply size filter
+  // Note: Size filtering is handled in fetchImages and downloadImageMessage
+  // Here, we skip it for performance reasons
+  // Alternatively, you can implement it here if needed
+
+  return filtered;
+}

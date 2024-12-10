@@ -148,6 +148,43 @@
           <div class="advanced-row">
             <button id="clear-advanced">Clear</button>
           </div>
+
+          <!-- New: Download from Multiple Pages -->
+          <div id="multi-page-download" style="margin-top: 20px;">
+            <div class="advanced-header">Download from Multiple Pages</div>
+            <div class="advanced-row">
+              <label for="url-template">URL Template:</label>
+              <input
+                type="text"
+                id="url-template"
+                placeholder="e.g. http://example.com/page/{{number}}"
+              />
+            </div>
+            <div class="advanced-row">
+              <label for="start-number">Start Number:</label>
+              <input
+                type="number"
+                id="start-number"
+                placeholder="e.g. 1"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="advanced-row">
+              <label for="end-number">End Number:</label>
+              <input
+                type="number"
+                id="end-number"
+                placeholder="e.g. 10"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="advanced-row">
+              <button id="start-multi-download">Start Multi Page Download</button>
+            </div>
+            <div id="multi-download-status"></div>
+          </div>
         </div>
 
         <div id="images-list"></div>
