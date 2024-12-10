@@ -25,28 +25,35 @@
         </div>
 
         <div id="advanced-settings" style="display: none">
-          <!-- Existing Replace Section -->
+          <!-- Replace Section with Multiple Replace/With Pairs -->
           <div class="advanced-header">Replace</div>
-          <div class="advanced-row">
-            <label for="replace-text">replace</label>
-            <input
-              type="text"
-              id="replace-text"
-              placeholder="e.g. http://oldsite.com/"
-            />
+          <div id="replace-container">
+            <div class="replace-row">
+              <div class="flex">
+                <label for="replace-text-1">replace</label>
+                <input
+                  type="text"
+                  id="replace-text-1"
+                  class="replace-text"
+                  placeholder="e.g. http://oldsite.com/"
+                />
+              </div>
+              <div class="flex">
+                <label for="with-text-1">with</label>
+                <input
+                  type="text"
+                  id="with-text-1"
+                  class="with-text"
+                  placeholder="e.g. http://newsite.com/"
+                />
+              </div>
+            </div>
           </div>
-          <div class="advanced-row">
-            <label for="with-text">with</label>
-            <input
-              type="text"
-              id="with-text"
-              placeholder="e.g. http://newsite.com/"
-            />
-          </div>
+          <button id="add-replace">+</button>
 
+          <!-- Image Types -->
           <div class="advanced-header">Image Types</div>
           <div class="advanced-row">
-            <label>Types:</label>
             <div class="block">
               <div class="checkbox-group">
                 <label
@@ -78,6 +85,35 @@
 
           <div class="flex">
             <div class="flex-section">
+              <div class="advanced-header">Only include URLs with</div>
+              <div class="advanced-row">
+                <input
+                  type="text"
+                  id="url-filter"
+                  placeholder="e.g. example.com"
+                />
+              </div>
+
+              <div class="advanced-header">File Name Override</div>
+              <div class="advanced-row">
+                <input
+                  type="text"
+                  id="filename-override"
+                  placeholder="e.g. llama"
+                />
+              </div>
+
+              <div class="advanced-header">Folder Name Override</div>
+              <div class="advanced-row">
+                <input
+                  type="text"
+                  id="foldername-override"
+                  placeholder="e.g. MyImages"
+                />
+              </div>
+            </div>
+
+            <div class="flex-section">
               <div class="advanced-header">File Size (MB)</div>
               <div class="advanced-row">
                 <label for="min-size">Min:</label>
@@ -100,26 +136,13 @@
                 />
               </div>
             </div>
+          </div>
 
-            <div class="flex-section">
-              <div class="advanced-header">Only include with</div>
-              <div class="advanced-row">
-                <input
-                  type="text"
-                  id="url-filter"
-                  placeholder="e.g. example.com"
-                />
-              </div>
-
-              <div class="advanced-header">File Name Override</div>
-              <div class="advanced-row">
-                <input
-                  type="text"
-                  id="filename-override"
-                  placeholder="e.g. llama"
-                />
-              </div>
-            </div>
+          <div class="advanced-row">
+            <label>
+              <input type="checkbox" id="remove-queries" />
+              Remove queries when downloading
+            </label>
           </div>
 
           <div class="advanced-row">

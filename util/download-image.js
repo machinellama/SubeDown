@@ -1,15 +1,15 @@
-// download-image.js
-
 /**
  * Downloads an image from the given URL.
  * If filenameOverride is provided, uses it as the filename.
+ * If foldernameOverride is provided, uses it as the folder name.
  * Otherwise, constructs the filename based on the URL and current tab.
  *
  * @param {string} url - The URL of the image to download.
  * @param {string|null} filenameOverride - The overridden filename, if any.
+ * @param {string|null} foldernameOverride - The overridden folder name, if any.
  * @param {function} sendResponse - The callback to send the response.
  */
-function downloadImage(url, filenameOverride, sendResponse) {
+function downloadImage(url, filenameOverride, foldernameOverride, sendResponse) {
   try {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs || tabs.length === 0) {
@@ -21,7 +21,7 @@ function downloadImage(url, filenameOverride, sendResponse) {
       const currentTab = tabs[0];
       const tabURL = currentTab.url.split("?")[0];
       const cleanedPart = cleanURL(tabURL, true);
-      const folderName = cleanedPart || "images";
+      const folderName = foldernameOverride || cleanedPart || "images";
 
       let downloadPath;
 

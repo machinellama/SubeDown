@@ -33,6 +33,7 @@
 
 .flex {
   display: flex;
+  align-items: center;
 }
 
 .flex-section {
@@ -59,7 +60,7 @@
   margin-right: 0.5rem;
 }
 
-/* New Max File Size Section */
+/* Existing Max File Size Section (Retained) */
 #max-file-size {
   width: 100%;
   padding: 0.3rem;
@@ -90,4 +91,108 @@
 
 #clear-advanced:hover {
   background: #2a71bd;
+}
+
+/* Replace Container */
+#replace-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Replace Row */
+.replace-row {
+  display: block;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Replace and With Inputs */
+.replace-row input.replace-text,
+.replace-row input.with-text {
+  flex: 1;
+  padding: 0.3rem;
+  border-radius: 3px;
+  border: 1px solid #696b7a;
+  background: #1b1f24;
+  color: #dfe2ed;
+}
+
+.replace-row label {
+  margin-right: 0.5rem;
+}
+
+/* Add Replace Button */
+#add-replace {
+  background: #1a5296;
+  color: #dfe2ed;
+  border: none;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.3s;
+  align-self: flex-start;
+}
+
+#add-replace:hover {
+  background: #2a71bd;
+}
+
+/* Remove Replace Button */
+.remove-replace {
+  background: #d9534f;
+  color: #ffffff;
+  border: none;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.3s;
+}
+
+.remove-replace:hover {
+  background: #c9302c;
+}
+
+/* Remove Replace Button Icon */
+.remove-replace::after {
+  content: "−"; /* Unicode minus sign */
+  font-weight: bold;
+}
+
+/* New Checkbox Row */
+#remove-queries {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+#remove-queries + label {
+  margin-left: 0.5rem;
+}
+
+/* Folder Name Override */
+#foldername-override {
+  flex: 1;
+  padding: 0.3rem;
+  border-radius: 3px;
+  border: 1px solid #696b7a;
+  background: #1b1f24;
+  color: #dfe2ed;
+}
+
+/* Adjustments for Consistency */
+.advanced-header + .replace-row,
+.advanced-header + #replace-container,
+.replace-row + #add-replace,
+.add-replace + .advanced-header,
+#remove-queries + label,
+.foldername-override {
+  /* Ensures proper spacing and alignment */
+}
+
+/* Optional: Tooltip for Buttons */
+#add-replace:hover::after,
+.remove-replace:hover::after {
+  /* Add tooltips if desired */
 }

@@ -1,5 +1,3 @@
-// sidebar.js
-
 let currentTabId;
 let imagesData = [];
 let downloadSuccess = [];
@@ -31,8 +29,30 @@ document.getElementById("advanced-toggle").addEventListener("click", () => {
 });
 
 document.getElementById("clear-advanced").addEventListener("click", () => {
-  document.getElementById("replace-text").value = "";
-  document.getElementById("with-text").value = "";
+  // Clear all replace/with pairs
+  const replaceContainer = document.getElementById("replace-container");
+  replaceContainer.innerHTML = `
+    <div class="replace-row">
+      <div class="flex">
+        <label for="replace-text-1">replace</label>
+        <input
+          type="text"
+          id="replace-text-1"
+          class="replace-text"
+          placeholder="e.g. http://oldsite.com/"
+        />
+      </div>
+      <div class="flex">
+        <label for="with-text-1">with</label>
+        <input
+          type="text"
+          id="with-text-1"
+          class="with-text"
+          placeholder="e.g. http://newsite.com/"
+        />
+      </div>
+    </div>
+  `;
 
   // Reset image type checkboxes to checked
   const checkboxes = document.querySelectorAll(
@@ -49,7 +69,79 @@ document.getElementById("clear-advanced").addEventListener("click", () => {
 
   // Clear File Name Override
   document.getElementById("filename-override").value = "";
+
+  // Clear Folder Name Override
+  document.getElementById("foldername-override").value = "";
+
+  // Uncheck Remove Queries
+  document.getElementById("remove-queries").checked = false;
 });
+
+// Event Listener for Adding Replace/With Pair
+document.getElementById("add-replace").addEventListener("click", () => {
+  addReplaceRow();
+});
+
+// Function to add a new replace/with row
+let replaceCount = 1;
+function addReplaceRow() {
+  replaceCount += 1;
+  const replaceContainer = document.getElementById("replace-container");
+  const replaceRow = document.createElement("div");
+  replaceRow.className = "replace-row";
+  replaceRow.innerHTML = `
+    <div class="flex">
+      <label for="replace-text-${replaceCount}">replace</label>
+      <input
+        type="text"
+        id="replace-text-${replaceCount}"
+        class="replace-text"
+        placeholder="e.g. http://oldsite.com/"
+      />
+    </div>
+    <div class="flex">
+      <label for="with-text-${replaceCount}">with</label>
+      <input
+        type="text"
+        id="with-text-${replaceCount}"
+        class="with-text"
+        placeholder="e.g. http://newsite.com/"
+      />
+    </div>
+    <button class="remove-replace" data-id="${replaceCount}">-</button>
+  `;
+  replaceContainer.appendChild(replaceRow);
+
+  // Add event listener for the remove button
+  replaceRow.querySelector(".remove-replace").addEventListener("click", (e) => {
+    const id = e.target.getAttribute("data-id");
+    removeReplaceRow(id);
+  });
+}
+
+// Function to remove a replace/with row
+function removeReplaceRow(id) {
+  const replaceRow = document.querySelector(`.remove-replace[data-id="${id}"]`).parentElement;
+  replaceRow.remove();
+}
+
+// Function to get all replace/with pairs
+function getReplaceWithPairs() {
+  const replaceTexts = document.querySelectorAll(".replace-text");
+  const withTexts = document.querySelectorAll(".with-text");
+  const pairs = [];
+
+  replaceTexts.forEach((replaceInput, index) => {
+    const withInput = withTexts[index];
+    const replaceVal = replaceInput.value.trim();
+    const withVal = withInput.value.trim();
+    if (replaceVal && withVal) {
+      pairs.push({ replace: replaceVal, with: withVal });
+    }
+  });
+
+  return pairs;
+}
 
 // Function to get selected image types
 function getSelectedImageTypes() {
@@ -85,6 +177,17 @@ function getURLFilter() {
 function getFilenameOverride() {
   const override = document.getElementById("filename-override").value.trim();
   return override.length > 0 ? override : null;
+}
+
+// Function to get Folder Name Override
+function getFoldernameOverride() {
+  const override = document.getElementById("foldername-override").value.trim();
+  return override.length > 0 ? override : null;
+}
+
+// Function to check if Remove Queries is checked
+function shouldRemoveQueries() {
+  return document.getElementById("remove-queries").checked;
 }
 
 // Function to fetch image size in MB
@@ -164,15 +267,14 @@ async function fetchImages() {
 
           console.log('fetchImages response', response);
 
-          // Apply Replace Text
-          const replaceText = document.getElementById("replace-text").value;
-          const withText = document.getElementById("with-text").value;
-          if (replaceText && withText) {
+          // Apply Replace Texts
+          const replaceWithPairs = getReplaceWithPairs();
+          replaceWithPairs.forEach(pair => {
             images = images.map(img => ({
               ...img,
-              url: img.url.split(replaceText).join(withText)
+              url: img.url.split(pair.replace).join(pair.with)
             }));
-          }
+          });
 
           // Apply image type filter
           const selectedTypes = getSelectedImageTypes();
@@ -297,12 +399,11 @@ function downloadImageMessage(img, index) {
   const originalUrl = img.url;
   let { url } = img;
 
-  const replaceText = document.getElementById("replace-text").value;
-  const withText = document.getElementById("with-text").value;
-
-  if (replaceText && withText) {
-    url = url.split(replaceText).join(withText);
-  }
+  // Apply all replace/with pairs
+  const replaceWithPairs = getReplaceWithPairs();
+  replaceWithPairs.forEach(pair => {
+    url = url.split(pair.replace).join(pair.with);
+  });
 
   // Get the File Name Override value
   const filenameOverride = getFilenameOverride();
@@ -322,8 +423,18 @@ function downloadImageMessage(img, index) {
     filename = `${filenameOverride}-${index + 1}${extension}`;
   }
 
+  // Get Folder Name Override
+  const foldernameOverride = getFoldernameOverride();
+
+  // Check if Remove Queries is checked
+  if (shouldRemoveQueries()) {
+    const urlObj = new URL(url);
+    urlObj.search = "";
+    url = urlObj.toString();
+  }
+
   chrome.runtime.sendMessage(
-    { action: "download-image", img: { url, filename } },
+    { action: "download-image", img: { url, filename, foldernameOverride } },
     (response) => {
       if (chrome.runtime.lastError) {
         console.error(`Failed to download ${url}:`, chrome.runtime.lastError);
