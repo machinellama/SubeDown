@@ -19,17 +19,17 @@
   "background": {
     "scripts": [
       "./util/clean-url.js",
-      "./util/download-image.js",
+      "./util/image-util.js",
       "background.js"
     ],
-    "persistent": false
+    "persistent": true
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "js": [
         "./util/clean-url.js",
-        "./util/find-images.js",
+        "./util/image-util.js",
         "content_script.js"
       ],
       "run_at": "document_idle"

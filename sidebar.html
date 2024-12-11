@@ -181,6 +181,16 @@
               />
             </div>
             <div class="advanced-row">
+              <label for="min-places">Min Places:</label>
+              <input
+                type="number"
+                id="min-places"
+                placeholder="e.g. 3 = 001"
+                min="0"
+                step="1"
+              />
+            </div>
+            <div class="advanced-row">
               <button id="start-multi-download">Start Multi Page Download</button>
             </div>
             <div id="multi-download-status"></div>
@@ -195,6 +205,8 @@
     </div>
 
     <script src="./util/clean-url.js"></script>
+    <script src="./util/image-util.js"></script>
+    <script src="./util/image-advanced.js"></script>
     <script src="sidebar.js"></script>
   </body>
 </html>
