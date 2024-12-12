@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="./styles/sidebar.css" />
     <link rel="stylesheet" href="./styles/advanced.css" />
     <link rel="stylesheet" href="./styles/images.css" />
+    <link rel="stylesheet" href="./styles/videos.css" />
   </head>
   <body>
     <div class="tabs">
@@ -150,7 +151,7 @@
           </div>
 
           <!-- New: Download from Multiple Pages -->
-          <div id="multi-page-download" style="margin-top: 20px;">
+          <div id="multi-page-download" style="margin-top: 20px">
             <div class="advanced-header">Download from Multiple Pages</div>
             <div class="advanced-row">
               <label for="url-template">URL Template:</label>
@@ -191,7 +192,9 @@
               />
             </div>
             <div class="advanced-row">
-              <button id="start-multi-download">Start Multi Page Download</button>
+              <button id="start-multi-download">
+                Start Multi Page Download
+              </button>
             </div>
             <div id="multi-download-status"></div>
           </div>
@@ -207,6 +210,7 @@
     <script src="./util/clean-url.js"></script>
     <script src="./util/image-util.js"></script>
     <script src="./util/image-advanced.js"></script>
+    <script src="./util/network.js"></script>
     <script src="sidebar.js"></script>
   </body>
 </html>

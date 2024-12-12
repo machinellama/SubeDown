@@ -10,35 +10,41 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 });
 
-// Listen for messages from the sidebar (if needed)
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.action === "download-image" && message.img && message.img.url) {
-    const url = message.img.url;
-    const filenameOverride = message.img.filename; // This includes the base filename with index and extension
-    const foldernameOverride = message.img.foldernameOverride || null;
-
-    downloadImage(url, filenameOverride, foldernameOverride, sendResponse);
-
-    // Indicate that the response will be sent asynchronously
-    return true;
-  }
-});
-
 // Monitor network requests using webRequest API
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
-    const requestInfo = {
-      url: details.url,
-      method: details.method,
-      type: details.type,
-      tabId: details.tabId,
-      timeStamp: details.timeStamp,
-    };
-
-    // Send the request info to the sidebar if connected
-    if (sidebarPort) {
-      sidebarPort.postMessage({ type: "network-request", data: requestInfo });
+    const parentURL = details.frameAncestors?.[0]?.url || null;
+    let parentURLName = "";
+    if (parentURL) {
+      // get the last split of (/) that's not empty in the parent url
+      const split = parentURL.split("/").filter((s) => s);
+      for (let i = split.length - 1; i >= 0; i--) {
+        if (split[i]) {
+          parentURLName = split[i];
+          break;
+        }
+      }
     }
+
+    chrome.tabs.get(details.tabId, (tab) => {
+      const tabTitle = tab.title;
+
+      const requestInfo = {
+        url: details.url,
+        method: details.method,
+        type: details.type,
+        tabId: details.tabId,
+        timeStamp: details.timeStamp,
+        parentURL: details.frameAncestors?.[0]?.url || null,
+        tabTitle: tabTitle || null,
+        parentURLName: parentURLName || null,
+      };
+
+      // Send the request info to the sidebar if connected
+      if (sidebarPort) {
+        sidebarPort.postMessage({ type: "network-request", data: requestInfo });
+      }
+    });
   },
   { urls: ["<all_urls>"] },
   [] // You can specify extraInfoSpec if needed, e.g., ["requestBody"]

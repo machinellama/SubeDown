@@ -20,6 +20,7 @@
     "scripts": [
       "./util/clean-url.js",
       "./util/image-util.js",
+      "./util/network.js",
       "background.js"
     ],
     "persistent": true
@@ -47,6 +48,7 @@
     "sidebar.html",
     "sidebar.css",
     "./util/clean-url.js",
+    "./util/network.js",
     "sidebar.js"
   ],
   "applications": {

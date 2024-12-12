@@ -1,3 +1,7 @@
+const downloadSuccess = [];
+const downloadFailed = [];
+let imagesData = [];
+
 // Function to fetch images with applied filters
 async function fetchImages() {
   try {
@@ -194,9 +198,12 @@ function downloadImageMessage(img, index, folder = null) {
     }
   }
 
-  chrome.runtime.sendMessage(
-    { action: "download-image", img: { url, filename, foldernameOverride } },
-    (response) => {
+  if (img.url) {
+    const url = img.url;
+    const filenameOverride = img.filename; // This includes the base filename with index and extension
+    const foldernameOverride = img.foldernameOverride || null;
+
+    function onDownloadImage(response) {
       if (chrome.runtime.lastError) {
         console.error(`Failed to download ${url}:`, chrome.runtime.lastError);
         if (!downloadFailed.includes(originalUrl)) {
@@ -224,7 +231,9 @@ function downloadImageMessage(img, index, folder = null) {
       }
       updateImageStatus(originalUrl);
     }
-  );
+
+    downloadImage(url, filenameOverride, foldernameOverride, onDownloadImage);
+  }
 }
 
 // Function to remove an image from the list

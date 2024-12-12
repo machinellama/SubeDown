@@ -1,11 +1,3 @@
-let currentTabId;
-let imagesData = [];
-let downloadSuccess = [];
-let downloadFailed = [];
-const videNetworkList = {};
-const MAX_NETWORK_LENGTH = 100;
-const VIDEO_TYPES = ["video"];
-
 // Advanced settings state
 let advancedVisible = false;
 
@@ -85,139 +77,6 @@ document.getElementById("add-replace").addEventListener("click", () => {
   addReplaceRow();
 });
 
-// Utility function to determine if a request is a video
-function isVideoRequest(request) {
-  // Check the 'type' field
-  if (VIDEO_TYPES.includes(request.type)) {
-    return true;
-  }
-
-  // Alternatively, check the file extension
-  const videoExtensions = [
-    ".mp4",
-    ".webm",
-    ".ogg",
-    ".mkv",
-    ".flv",
-    ".avi",
-    ".mov",
-  ];
-  try {
-    const url = new URL(request.url);
-    return videoExtensions.some((ext) => url.pathname.endsWith(ext));
-  } catch (e) {
-    // If URL parsing fails, assume it's not a video
-    return false;
-  }
-}
-
-// Utility function to generate a unique key for each video
-function generateVideoKey(request) {
-  // Strategy:
-  // 1. Use the base URL without query parameters and fragments.
-  // 2. Include the tabId to differentiate videos from different tabs.
-  // 3. Optionally, include a hash or timestamp if necessary.
-
-  try {
-    const url = new URL(request.url);
-    // Remove query parameters and fragments
-    const baseUrl = `${url.protocol}//${url.host}${url.pathname}`;
-    // Combine with tabId
-    return `${request.tabId}:${baseUrl}`;
-  } catch (e) {
-    // Fallback in case of URL parsing error
-    return `${request.tabId}:${request.url}`;
-  }
-}
-
-// Function to add or update a video entry in videNetworkList
-function addOrUpdateVideo(request) {
-  const videoKey = generateVideoKey(request);
-
-  if (videNetworkList[videoKey]) {
-    // Video already exists, check if it's multipart
-    const existingVideo = videNetworkList[videoKey];
-
-    // Simple heuristic to detect multipart:
-    // If the URL contains a segment like 'chunk', 'segment', or similar
-    const multipartIndicators = ["chunk", "segment", "part", "stream"];
-    const isMultipart = multipartIndicators.some((indicator) =>
-      request.url.toLowerCase().includes(indicator)
-    );
-
-    if (isMultipart) {
-      // Add the new part to the existing video entry
-      existingVideo.parts.push({
-        url: request.url,
-        method: request.method,
-        timeStamp: request.timeStamp,
-      });
-
-      // Optionally, update other metadata if needed
-      existingVideo.lastUpdated = Date.now();
-    }
-
-    // If not multipart and already exists, do nothing to avoid duplicates
-  } else {
-    // New video entry
-    const isMultipartInitial = false; // Assume initial request is not multipart
-
-    videNetworkList[videoKey] = {
-      url: request.url,
-      method: request.method,
-      type: request.type,
-      tabId: request.tabId,
-      timeStamp: request.timeStamp,
-      parts: [], // Array to hold multipart segments
-      lastUpdated: Date.now(),
-    };
-  }
-
-  // Manage the size of videNetworkList
-  if (Object.keys(videNetworkList).length > MAX_NETWORK_LENGTH) {
-    // Remove the oldest entry
-    const oldestKey = Object.keys(videNetworkList).reduce((a, b) => {
-      return videNetworkList[a].timeStamp < videNetworkList[b].timeStamp
-        ? a
-        : b;
-    });
-    delete videNetworkList[oldestKey];
-  }
-
-  // Optionally, send the updated list to the UI
-  updateUI();
-}
-
-// Function to update the UI with the latest videNetworkList
-function updateUI() {
-  // Implement UI update logic here
-  // For example, clear and repopulate the list in the DOM
-  const networkListElement = document.getElementById("network-requests");
-  if (!networkListElement) return;
-
-  // Clear existing list
-  networkListElement.innerHTML = "";
-
-  // Iterate over videNetworkList and display entries
-  for (const [key, video] of Object.entries(videNetworkList)) {
-    const listItem = document.createElement("li");
-    listItem.className = "request-item";
-
-    // Display basic video info
-    let displayText = `[${new Date(video.timeStamp).toLocaleTimeString()}] ${
-      video.method
-    } ${video.url}`;
-
-    // If multipart, indicate the number of parts
-    if (video.parts.length > 0) {
-      displayText += ` (${video.parts.length} parts)`;
-    }
-
-    listItem.textContent = displayText;
-    networkListElement.appendChild(listItem);
-  }
-}
-
 // Establish connection with background script
 const port = chrome.runtime.connect({ name: "sidebar" });
 
@@ -230,8 +89,6 @@ port.onMessage.addListener((message) => {
     if (isVideoRequest(req)) {
       addOrUpdateVideo(req);
     }
-  } else if (message.type === "init") {
-    console.log(message.message);
   }
 });
 
