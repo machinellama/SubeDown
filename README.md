@@ -4,6 +4,10 @@ A fully open-source, privacy-focused, and free Firefox extension for downloading
 
 Completely free and private: no ads, no trackers, no payments, no subscriptions, no "companion" apps, no data leaves the extension.
 
+Firefox Addon: https://addons.mozilla.org/en-US/firefox/addon/subedown/
+
+Github: https://github.com/machinellama/SubeDown
+
 ## Features
 
 - **Image Downloader**: Download all images on a web page with one click, with some advanced options:
