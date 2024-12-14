@@ -4,6 +4,19 @@ const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
 
 const MULTIPART_INDICATORS = ["chunk-", "segment-", "part-", "stream-", "seg-"];
 
+const videoExtensions = [
+  ".mp4",
+  ".webm",
+  ".ogg",
+  ".mkv",
+  ".flv",
+  ".avi",
+  ".mov",
+  ".ts",
+];
+
+const invalidTypes = [".mp3"];
+
 // Utility function to determine if a request is a video
 function isVideoRequest(request) {
   // Check the 'type' field
@@ -17,20 +30,9 @@ function isVideoRequest(request) {
       return false;
     }
 
-    return true;
+    return !invalidTypes.some((ext) => request.url.includes(ext));
   }
 
-  // Alternatively, check the file extension
-  const videoExtensions = [
-    ".mp4",
-    ".webm",
-    ".ogg",
-    ".mkv",
-    ".flv",
-    ".avi",
-    ".mov",
-    ".ts",
-  ];
   try {
     const url = new URL(request.url);
     return videoExtensions.some((ext) => {
@@ -202,7 +204,7 @@ function updateVideoUI() {
             await downloadVideo(video.url, tabTitle, current);
           }
         } catch (err) {
-          showError("Download failed: ", err);
+          console.error("Download failed: ", err);
         } finally {
           loadingIndicator.style.display = "none";
           downloadBtn.style.display = "block";
@@ -219,7 +221,7 @@ async function downloadVideo(url, tabTitle, current) {
     // Perform a HEAD request to get content type and determine file extension
     const headResponse = await fetch(url, { method: "HEAD" });
     if (!headResponse.ok) {
-      showError(
+      console.error(
         "Failed to fetch video headers: ",
         headResponse.status,
         headResponse.statusText
@@ -246,7 +248,7 @@ async function downloadVideo(url, tabTitle, current) {
       },
       (downloadId) => {
         if (chrome.runtime && chrome.runtime.lastError) {
-          showError("Download failed: ", chrome.runtime.lastError.message);
+          console.error("Download failed: ", chrome.runtime.lastError.message);
         } else {
           current.downloadId = downloadId;
           current.progress = 0;
@@ -254,7 +256,7 @@ async function downloadVideo(url, tabTitle, current) {
       }
     );
   } catch (error) {
-    showError("Error initiating download: ", error);
+    console.error("Error initiating download: ", error);
   }
 }
 
@@ -315,7 +317,7 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
   }
 
   if (arrayBuffers.length === 0) {
-    showError("No segments found for multi-part video");
+    console.error("No segments found for multi-part video");
     return;
   }
 
@@ -343,7 +345,7 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
     },
     (downloadId) => {
       if (chrome.runtime && chrome.runtime.lastError) {
-        showError("Download failed: ", chrome.runtime.lastError.message);
+        console.error("Download failed: ", chrome.runtime.lastError.message);
       }
     }
   );

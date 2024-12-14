@@ -28,6 +28,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 
     chrome.tabs.get(details.tabId, (tab) => {
       const tabTitle = tab.title;
+      const tabURL = tab.url;
 
       const requestInfo = {
         url: details.url,
@@ -37,6 +38,7 @@ chrome.webRequest.onBeforeRequest.addListener(
         timeStamp: details.timeStamp,
         parentURL: details.frameAncestors?.[0]?.url || null,
         tabTitle: tabTitle || null,
+        tabURL: tabURL || null,
         parentURLName: parentURLName || null,
       };
 
