@@ -298,7 +298,7 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
 
-  let segmentNumber = 429;
+  let segmentNumber = 1;
   const arrayBuffers = [];
 
   while (true) {
