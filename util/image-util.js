@@ -158,17 +158,27 @@ function renderImages() {
 // Function to handle image download
 function downloadImageMessage(img, index, folder = null) {
   const originalUrl = img.url;
-  let { url } = img;
+
+  let url = img.url;
+  let filenameOverride = getFilenameOverride() || img.parentURLName || null;
+  let foldernameOverride = getFoldernameOverride() || folder || img.parentURLName || null;
 
   // Apply all replace/with pairs
   const replaceWithPairs = getReplaceWithPairs();
   replaceWithPairs.forEach((pair) => {
-    url = url.split(pair.replace).join(pair.with);
+    let { replace: pattern, with: replacement } = pair;
+    if (pattern.endsWith('*')) {
+      let base = pattern.slice(0, -1);
+      let startIndex = url.indexOf(base);
+      if (startIndex !== -1) {
+        let endIndex = url.indexOf('&', startIndex);
+        if (endIndex === -1) endIndex = url.length;
+        url = url.slice(0, startIndex) + replacement + url.slice(endIndex);
+      }
+    } else {
+      url = url.split(pattern).join(replacement);
+    }
   });
-
-  // Get the File Name Override value
-  const filenameOverride = getFilenameOverride();
-  let filename = null;
 
   if (filenameOverride) {
     // Extract the file extension from the URL
@@ -181,11 +191,8 @@ function downloadImageMessage(img, index, folder = null) {
     }
 
     // Construct the new filename
-    filename = `${filenameOverride}-${index + 1}${extension}`;
+    foldernameOverride = `${filenameOverride}-${index + 1}${extension}`;
   }
-
-  // Get Folder Name Override
-  const foldernameOverride = getFoldernameOverride() ?? folder;
 
   // Check if Remove Queries is checked
   if (shouldRemoveQueries()) {
@@ -198,11 +205,7 @@ function downloadImageMessage(img, index, folder = null) {
     }
   }
 
-  if (img.url) {
-    const url = img.url;
-    const filenameOverride = img.filename; // This includes the base filename with index and extension
-    const foldernameOverride = img.foldernameOverride || null;
-
+  if (url) {
     function onDownloadImage(response) {
       if (chrome.runtime.lastError) {
         console.error(`Failed to download ${url}:`, chrome.runtime.lastError);
