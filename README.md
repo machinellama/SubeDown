@@ -11,12 +11,18 @@ Github: https://github.com/machinellama/SubeDown
 ## Features
 
 - **Image Downloader**: Download all images on a web page with one click, with some advanced options:
-  - Replace text in a url (multiple replaces allowed)
-  - Filter by image types
-  - Filter by image size (min and max)
-  - Filter urls that include a specific substring
-  - Override the file name or folder name for downloads
+  - Download Settings:
+    - Override the file name or folder name for downloads
+    - Replace text in a url when downloading (multiple replaces allowed)
+      - use * to replace everything after
+        - replace `test=*` with `test=123&other=456`
+        - will replace `example.com?test=abc` with `example.com?test=123&other=456`
+  - Refresh Settings:
+    - Filter by image types
+    - Filter by image size (min and max)
+    - Filter urls that include a specific substring
   - Download from multiple pages, by using a {{number}} placeholder in the url
+    - Will apply refresh and download settings to each page
 - **Video Downloader**: Download videos on a web page
   - Supports segmented videos (e.g. .ts segment files)
   - Note: videos are still a work in progress, but it works for many cases
