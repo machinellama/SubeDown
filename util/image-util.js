@@ -191,7 +191,7 @@ function downloadImageMessage(img, index, folder = null) {
     }
 
     // Construct the new filename
-    foldernameOverride = `${filenameOverride}-${index + 1}${extension}`;
+    filenameOverride = `${filenameOverride}-${index + 1}${extension}`;
   }
 
   // Check if Remove Queries is checked
