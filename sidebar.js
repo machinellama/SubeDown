@@ -92,20 +92,6 @@ port.onMessage.addListener((message) => {
   }
 });
 
-// Optional: Clear the list when the sidebar is opened/refreshed
-window.onload = () => {
-  // Initialize the videNetworkList object
-  for (const key in videNetworkList) {
-    delete videNetworkList[key];
-  }
-
-  // Clear the UI
-  const networkListElement = document.getElementById("network-requests");
-  if (networkListElement) {
-    networkListElement.innerHTML = "";
-  }
-};
-
 // Function to show sections
 async function showSection(section) {
   if (section === "images") {

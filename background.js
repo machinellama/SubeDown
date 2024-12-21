@@ -2,7 +2,7 @@ let sidebarPort = null;
 
 // Establish a connection with the sidebar
 chrome.runtime.onConnect.addListener((port) => {
-  if (port.name === "sidebar") {
+  if (port.name === "sidebar" && !sidebarPort) {
     sidebarPort = port;
 
     // Optionally, send initial data or a welcome message

@@ -26,31 +26,7 @@
         </div>
 
         <div id="advanced-settings" style="display: none">
-          <!-- Replace Section with Multiple Replace/With Pairs -->
-          <div class="advanced-header">Replace</div>
-          <div id="replace-container">
-            <div class="replace-row">
-              <div class="flex">
-                <label for="replace-text-1">replace</label>
-                <input
-                  type="text"
-                  id="replace-text-1"
-                  class="replace-text"
-                  placeholder="e.g. http://oldsite.com/"
-                />
-              </div>
-              <div class="flex">
-                <label for="with-text-1">with</label>
-                <input
-                  type="text"
-                  id="with-text-1"
-                  class="with-text"
-                  placeholder="e.g. http://newsite.com/"
-                />
-              </div>
-            </div>
-          </div>
-          <button id="add-replace">+</button>
+          <div class="advanced-header">Refresh Settings:</div>
 
           <!-- Image Types -->
           <div class="advanced-header">Image Types</div>
@@ -94,24 +70,6 @@
                   placeholder="e.g. example.com"
                 />
               </div>
-
-              <div class="advanced-header">File Name Override</div>
-              <div class="advanced-row">
-                <input
-                  type="text"
-                  id="filename-override"
-                  placeholder="e.g. llama"
-                />
-              </div>
-
-              <div class="advanced-header">Folder Name Override</div>
-              <div class="advanced-row">
-                <input
-                  type="text"
-                  id="foldername-override"
-                  placeholder="e.g. MyImages"
-                />
-              </div>
             </div>
 
             <div class="flex-section">
@@ -139,6 +97,56 @@
             </div>
           </div>
 
+          <div class="advanced-header">Download Settings:</div>
+
+          <!-- Replace Section with Multiple Replace/With Pairs -->
+          <div class="advanced-header">Replace in URL on Download</div>
+          <div id="replace-container">
+            <div class="replace-row">
+              <div class="flex">
+                <label for="replace-text-1">replace</label>
+                <input
+                  type="text"
+                  id="replace-text-1"
+                  class="replace-text"
+                  placeholder="e.g. http://oldsite.com/"
+                />
+              </div>
+              <div class="flex">
+                <label for="with-text-1">with</label>
+                <input
+                  type="text"
+                  id="with-text-1"
+                  class="with-text"
+                  placeholder="e.g. http://newsite.com/"
+                />
+              </div>
+            </div>
+          </div>
+          <button id="add-replace">+</button>
+
+          <div class="flex">
+            <div class="flex-section">
+              <div class="advanced-header">File Name Override</div>
+              <div class="advanced-row">
+                <input
+                  type="text"
+                  id="filename-override"
+                  placeholder="e.g. llama"
+                />
+              </div>
+
+              <div class="advanced-header">Folder Name Override</div>
+              <div class="advanced-row">
+                <input
+                  type="text"
+                  id="foldername-override"
+                  placeholder="e.g. MyImages"
+                />
+              </div>
+            </div>
+          </div>
+
           <div class="advanced-row">
             <label>
               <input type="checkbox" id="remove-queries" />
@@ -147,7 +155,7 @@
           </div>
 
           <div class="advanced-row">
-            <button id="clear-advanced">Clear</button>
+            <button id="clear-advanced">Clear Refresh and Download Settings</button>
           </div>
 
           <!-- New: Download from Multiple Pages -->

@@ -187,7 +187,7 @@ function updateVideoUI() {
 
       const loadingIndicator = document.createElement("div");
       loadingIndicator.classList.add("loading-indicator");
-      loadingIndicator.textContent = "Downloading...";
+      loadingIndicator.textContent = "Starting Download...";
       videoDiv.appendChild(loadingIndicator);
 
       downloadBtn.addEventListener("click", async () => {
