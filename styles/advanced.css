@@ -1,4 +1,4 @@
-#advanced-toggle {
+.advanced-toggle {
   background: black;
   color: #dfe2ed;
   border: none;
@@ -9,11 +9,11 @@
   border: 1px solid #696b7a;
 }
 
-#advanced-toggle:hover {
+.advanced-toggle:hover {
   background: #0d1117;
 }
 
-#advanced-settings {
+.advanced-settings {
   background: #0d1117;
   border: 1px solid #696b7a;
   border-radius: 3px;

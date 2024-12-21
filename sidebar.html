@@ -19,13 +19,19 @@
         <div class="controls">
           <div>Images found: <span id="images-count">0</span></div>
           <div class="buttons-row">
-            <button id="advanced-toggle">Advanced</button>
+            <button id="advanced-toggle" class="advanced-toggle">
+              Advanced
+            </button>
             <button id="refresh-images">Refresh</button>
             <button id="download-all">Download All</button>
           </div>
         </div>
 
-        <div id="advanced-settings" style="display: none">
+        <div
+          id="advanced-settings"
+          class="advanced-settings"
+          style="display: none"
+        >
           <div class="advanced-header">Refresh Settings:</div>
 
           <!-- Image Types -->
@@ -125,25 +131,23 @@
           </div>
           <button id="add-replace">+</button>
 
-          <div class="flex">
-            <div class="flex-section">
-              <div class="advanced-header">File Name Override</div>
-              <div class="advanced-row">
-                <input
-                  type="text"
-                  id="filename-override"
-                  placeholder="e.g. llama"
-                />
-              </div>
+          <div>
+            <div class="advanced-header">File Name Override</div>
+            <div class="advanced-row">
+              <input
+                type="text"
+                id="filename-override"
+                placeholder="e.g. llama"
+              />
+            </div>
 
-              <div class="advanced-header">Folder Name Override</div>
-              <div class="advanced-row">
-                <input
-                  type="text"
-                  id="foldername-override"
-                  placeholder="e.g. MyImages"
-                />
-              </div>
+            <div class="advanced-header">Folder Name Override</div>
+            <div class="advanced-row">
+              <input
+                type="text"
+                id="foldername-override"
+                placeholder="e.g. MyImages"
+              />
             </div>
           </div>
 
@@ -155,7 +159,9 @@
           </div>
 
           <div class="advanced-row">
-            <button id="clear-advanced">Clear Refresh and Download Settings</button>
+            <button id="clear-advanced">
+              Clear Refresh and Download Settings
+            </button>
           </div>
 
           <!-- New: Download from Multiple Pages -->
@@ -212,7 +218,49 @@
       </div>
 
       <!-- Videos Section -->
-      <div id="videos-section" style="display: none">...</div>
+      <div id="videos-section" style="display: none">
+        <div class="controls">
+          <div>
+            Videos found: <span id="videos-count">0</span> (refresh page for new
+            content)
+          </div>
+          <div class="buttons-row">
+            <button id="videos-advanced-toggle" class="advanced-toggle">
+              Advanced
+            </button>
+          </div>
+        </div>
+
+        <div
+          id="videos-advanced-settings"
+          class="advanced-settings"
+          style="display: none"
+        >
+          <div class="advanced-header">Download Settings:</div>
+
+          <div class="flex-section">
+            <div class="advanced-header">File Name Override</div>
+            <div class="advanced-row">
+              <input
+                type="text"
+                id="video-filename-override"
+                placeholder="e.g. myvideo"
+              />
+            </div>
+
+            <div class="advanced-header">Folder Name Override</div>
+            <div class="advanced-row">
+              <input
+                type="text"
+                id="video-foldername-override"
+                placeholder="e.g. MyVideos"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div id="videos-list"></div>
+      </div>
     </div>
 
     <script src="./util/clean-url.js"></script>

@@ -10,7 +10,7 @@ document.getElementById("videos-tab").addEventListener("click", () => {
   showSection("videos");
 });
 
-// Event Listeners for Buttons
+// Event Listeners for Images Buttons
 document.getElementById("download-all").addEventListener("click", () => {
   downloadAllImages();
 });
@@ -77,6 +77,10 @@ document.getElementById("add-replace").addEventListener("click", () => {
   addReplaceRow();
 });
 
+document.getElementById("videos-advanced-toggle").addEventListener("click", () => {
+  toggleVideosAdvancedSettings();
+});
+
 // Establish connection with background script
 const port = chrome.runtime.connect({ name: "sidebar" });
 
@@ -105,7 +109,22 @@ async function showSection(section) {
     document.getElementById("videos-section").style.display = "block";
     document.getElementById("images-tab").classList.remove("active");
     document.getElementById("videos-tab").classList.add("active");
-    // Future implementation for videos
+  }
+}
+
+// Toggle Advanced Settings for Images
+function toggleAdvancedSettings() {
+  advancedVisible = !advancedVisible;
+  document.getElementById("advanced-settings").style.display = advancedVisible ? "block" : "none";
+}
+
+// Toggle Advanced Settings for Videos
+function toggleVideosAdvancedSettings() {
+  const videosAdvancedSettings = document.getElementById("videos-advanced-settings");
+  if (videosAdvancedSettings.style.display === "none" || videosAdvancedSettings.style.display === "") {
+    videosAdvancedSettings.style.display = "block";
+  } else {
+    videosAdvancedSettings.style.display = "none";
   }
 }
 

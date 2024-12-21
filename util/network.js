@@ -139,17 +139,13 @@ function addOrUpdateVideo(request) {
 }
 
 function updateVideoUI() {
-  const videosSection = document.getElementById("videos-section");
+  const videosSection = document.getElementById("videos-list");
 
   if (!videosSection) {
     return;
   }
 
   videosSection.innerHTML = "";
-  const descriptionDiv = document.createElement("div");
-  descriptionDiv.classList.add("video-section-description");
-  descriptionDiv.textContent = "Refresh the page to see the latest videos.";
-  videosSection.appendChild(descriptionDiv);
 
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     let currentTabId = tabs[0]?.id;
@@ -163,6 +159,10 @@ function updateVideoUI() {
 
     for (const key of currentKeys) {
       const video = current[key];
+
+      if (!video) {
+        return;
+      }
 
       const videoDiv = document.createElement("div");
       videoDiv.classList.add("video-entry");
@@ -230,20 +230,40 @@ async function downloadVideo(url, tabTitle, current) {
     }
 
     let filename = tabTitle || url.split("/").pop().split("?")[0] || "video";
+    filename = cleanURL(filename, true);
+    let extension;
 
     const contentType = headResponse.headers.get("Content-Type") || "";
     if (contentType.includes("video/")) {
-      const ext = contentType.split("/")[1];
-      if (ext && !filename.endsWith(`.${ext}`)) {
-        filename += `.${ext}`;
+      extension = contentType.split("/")[1];
+      if (extension && !filename.endsWith(`.${extension}`)) {
+        filename += `.${extension}`;
       }
+    }
+
+    let filenameOverride = getVideoFilenameOverride() || null;
+    let foldernameOverride = getVideoFoldernameOverride() || null;
+
+    if (filenameOverride) {
+      // Construct the new filename
+      filenameOverride += `.${extension}`;
+    }
+
+    const folderName = foldernameOverride || "videos";
+    let downloadPath;
+
+    if (filenameOverride) {
+      // Use the overridden filename provided by the sidebar
+      downloadPath = `${folderName}/${filenameOverride}`;
+    } else {
+      downloadPath = `${folderName}/${filename}`;
     }
 
     // Initiate the download directly using the original URL
     (browser.downloads || chrome.downloads).download(
       {
         url: url,
-        filename: cleanURL(filename, true),
+        filename: downloadPath,
         conflictAction: "uniquify",
       },
       (downloadId) => {
@@ -351,17 +371,19 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
   );
 }
 
-// A simple utility to clean the filename from query parameters or other unwanted characters
-function cleanURL(url, stripQuery) {
-  let clean = url;
-  if (stripQuery) {
-    clean = clean.split("?")[0];
-  }
-  // Replace any invalid filename characters if needed
-  return clean.replace(/[<>:"\/\\|?*]+/g, "_");
-}
-
 // every time the tab changes to a new tab, update the UI
 chrome.tabs.onActivated.addListener((activeInfo) => {
   updateVideoUI();
 });
+
+// Function to get Folder Name Override
+function getVideoFoldernameOverride() {
+  const override = document.getElementById("video-foldername-override").value.trim();
+  return override.length > 0 ? override : null;
+}
+
+// Function to get File Name Override
+function getVideoFilenameOverride() {
+  const override = document.getElementById("video-filename-override").value.trim();
+  return override.length > 0 ? override : null;
+}
