@@ -2,7 +2,9 @@ let sidebarPort = null;
 
 // Establish a connection with the sidebar
 chrome.runtime.onConnect.addListener((port) => {
-  if (port.name === "sidebar" && !sidebarPort) {
+  // console.log("background.js onConnect", { port, sidebarPort});
+
+  if (port.name === "sidebar") {
     sidebarPort = port;
 
     // Optionally, send initial data or a welcome message
