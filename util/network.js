@@ -32,7 +32,7 @@ const invalidTypes = [
   "videos_screenshots",
   "thumb-",
   ".css",
-  ".js"
+  ".js",
 ];
 
 // Utility function to determine if a request is a video
@@ -225,6 +225,56 @@ function updateVideoUI() {
       urlDiv.textContent = urlWithoutQuery;
       videoDiv.appendChild(urlDiv);
 
+      let videoAdvancedSection;
+      let replaceInput;
+      let startNumberInput;
+      let endNumberInput;
+      let minPlacesInput;
+
+      if (video.isMultipart) {
+        videoAdvancedSection = document.createElement("div");
+        videoAdvancedSection.id = `video-advanced-${key}`;
+        videoAdvancedSection.style.display = "none";
+        videoAdvancedSection.style.marginBottom = "10px";
+        videoDiv.appendChild(videoAdvancedSection);
+
+        // advanced section inputs
+        const advancedTitle = document.createElement("div");
+        advancedTitle.classList.add("video-advanced-title");
+        advancedTitle.textContent = "Multi-part Segment URL Template";
+        videoAdvancedSection.appendChild(advancedTitle);
+
+        // Replace in URL
+        replaceInput = document.createElement("input");
+        replaceInput.id = "multi-part-replace";
+        replaceInput.type = "text";
+        replaceInput.placeholder = "e.g. seg-{{number}}";
+        videoAdvancedSection.appendChild(replaceInput);
+
+        // Start Number:
+        startNumberInput = document.createElement("input");
+        startNumberInput.id = "multi-part-start-number";
+        startNumberInput.type = "number";
+        startNumberInput.placeholder = "Start Number";
+        videoAdvancedSection.appendChild(startNumberInput);
+
+        // End Number:
+        endNumberInput = document.createElement("input");
+        endNumberInput.id = "multi-part-end-number";
+        endNumberInput.type = "number";
+        endNumberInput.placeholder = "End Number";
+        videoAdvancedSection.appendChild(endNumberInput);
+
+        // Minimum Places:
+        minPlacesInput = document.createElement("input");
+        minPlacesInput.id = "multi-part-min-places";
+        minPlacesInput.type = "number";
+        minPlacesInput.placeholder = "e.g. 3 = 001";
+        minPlacesInput.min = "0";
+        minPlacesInput.step = "1";
+        videoAdvancedSection.appendChild(minPlacesInput);
+      }
+
       // video buttons
       const buttonsDiv = document.createElement("div");
       buttonsDiv.classList.add("video-buttons");
@@ -242,14 +292,22 @@ function updateVideoUI() {
 
       copyBtn.addEventListener("click", () => {
         navigator.clipboard.writeText(video.url).then(
-          () => {
-            console.log("URL copied to clipboard", video.url);
-          },
-          (err) => {
-            console.error("Failed to copy URL to clipboard: ", err);
-          }
+          () => {},
+          (err) => {}
         );
       });
+
+      let videoAdvancedBtn;
+      if (video.isMultipart) {
+        videoAdvancedBtn = document.createElement("button");
+        videoAdvancedBtn.classList.add("copy-btn");
+        videoAdvancedBtn.textContent = "Advanced";
+        buttonsDiv.appendChild(videoAdvancedBtn);
+
+        videoAdvancedBtn.addEventListener("click", () => {
+          videoAdvancedSection.style.display = "block";
+        });
+      }
 
       const loadingIndicator = document.createElement("div");
       loadingIndicator.classList.add("loading-indicator");
@@ -261,11 +319,21 @@ function updateVideoUI() {
         downloadBtn.style.display = "none";
         copyBtn.style.display = "none";
 
+        if (video.isMultipart) {
+          videoAdvancedBtn.style.display = "none";
+          videoAdvancedSection.style.display = "none";
+        }
+
         try {
           current.loadingIndicator = loadingIndicator;
           if (video.isMultipart) {
             // Attempt multi-part download
-            await downloadFullMultipartVideo(video, tabTitle, current);
+            await downloadFullMultipartVideo(video, tabTitle, current, {
+              replace: replaceInput.value,
+              startNumber: startNumberInput.value,
+              endNumber: endNumberInput.value,
+              minPlaces: minPlacesInput.value,
+            });
           } else {
             // Normal single video download
             await downloadVideo(video.url, tabTitle, current);
@@ -276,6 +344,11 @@ function updateVideoUI() {
           loadingIndicator.style.display = "none";
           downloadBtn.style.display = "block";
           copyBtn.style.display = "block";
+
+          if (video.isMultipart) {
+            videoAdvancedBtn.style.display = "block";
+            videoAdvancedSection.style.display = "none";
+          }
         }
       });
 
@@ -400,7 +473,8 @@ function replaceMultiPartNumber(text, search, newNumber) {
 
       // replace last char with newNumber
       const newLastChar = newNumber.toString();
-      result = firstPart.substring(0, firstPart.length - 1) + newLastChar + ".ts";
+      result =
+        firstPart.substring(0, firstPart.length - 1) + newLastChar + ".ts";
     }
   } else {
     const regex = new RegExp(`${search}(\\d+)`);
@@ -413,28 +487,26 @@ function replaceMultiPartNumber(text, search, newNumber) {
 }
 
 // Attempt to download a multi-part video by incrementing segment numbers until it fails
-async function downloadFullMultipartVideo(video, tabTitle, current) {
+async function downloadFullMultipartVideo(
+  video,
+  tabTitle,
+  current,
+  options = {}
+) {
   const url = video.url;
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
 
+  // console.log('downloadFullMultipartVideo', { video, tabTitle, current, options });
+
   const arrayBuffers = [];
 
-  const urlTemplate = document
-    .getElementById("multi-part-replace")
-    .value.trim();
-  const startNumber = parseInt(
-    document.getElementById("multi-part-start-number").value,
-    10
-  );
-  const endNumber = parseInt(
-    document.getElementById("multi-part-end-number").value,
-    10
-  );
-  const minPlaces = parseInt(
-    document.getElementById("multi-part-min-places").value,
-    10
-  );
+  const urlTemplate = options.replace?.trim();
+  const startNumber = parseInt(options.startNumber, 10);
+  const endNumber = parseInt(options.endNumber, 10);
+  const minPlaces = parseInt(options.minPlaces, 10);
+
+  // console.log('downloadFullMultipartVideo', { urlTemplate, startNumber, endNumber, minPlaces });
 
   // if the url has "seg-" and ".m4s", then need to get an initial segment
   if (url.includes("seg-") && url.includes(".m4s")) {
