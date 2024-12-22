@@ -9,6 +9,7 @@ const MULTIPART_INDICATORS = [
   "stream-",
   "seg-",
   "ep.",
+  "hls-",
 ];
 
 const videoExtensions = [
@@ -20,34 +21,59 @@ const videoExtensions = [
   ".avi",
   ".mov",
   ".ts",
+  ".m4s",
 ];
 
-const invalidTypes = [".mp3"];
+const invalidTypes = [
+  ".mp3",
+  "-pic.",
+  ".js",
+  "/images/",
+  "videos_screenshots",
+  "thumb-",
+  ".css",
+  ".js"
+];
 
 // Utility function to determine if a request is a video
 function isVideoRequest(request) {
+  if (!request.url) {
+    return false;
+  }
+
+  const url = request.url;
+
+  // console.log("isVideoRequest", {
+  //   request,
+  //   includesVideoTypes: VIDEO_TYPES.includes(request.type),
+  //   includesVideoExtensions: videoExtensions.some((ext) => url.includes(ext)),
+  //   includesInvalidTypes: invalidTypes.some((ext) => url.includes(ext)),
+  // });
+
   // Check the 'type' field
   if (VIDEO_TYPES.includes(request.type)) {
     if (
       request.type === "xmlhttprequest" &&
       !MULTIPART_INDICATORS.some((indicator) =>
-        request.url.toLowerCase().includes(indicator)
+        url.toLowerCase().includes(indicator)
       )
     ) {
       return false;
     }
 
-    return !invalidTypes.some((ext) => request.url.includes(ext));
+    if (!videoExtensions.some((ext) => url.includes(ext))) {
+      return false;
+    }
+
+    return !invalidTypes.some((ext) => url.includes(ext));
   }
 
   try {
-    const url = new URL(request.url);
-    return videoExtensions.some((ext) => {
-      if (url.pathname.includes(ext)) {
-        return true;
-      }
+    if (invalidTypes.some((ext) => url.includes(ext))) {
       return false;
-    });
+    }
+
+    return videoExtensions.some((ext) => url.includes(ext));
   } catch (e) {
     // If URL parsing fails, assume it's not a video
     return false;
@@ -82,6 +108,13 @@ function generateVideoKey(request) {
 // Function to add or update a video entry in videoNetworkList
 function addOrUpdateVideo(request) {
   const videoKey = generateVideoKey(request);
+
+  // console.log("addOrUpdateVideo", {
+  //   request,
+  //   videoKey,
+  //   isVideoRequest: isVideoRequest(request),
+  //   existing: videoNetworkList[request.tabId]?.[videoKey],
+  // });
 
   if (isVideoRequest(request)) {
     if (!videoNetworkList[request.tabId]) {
@@ -129,6 +162,11 @@ function addOrUpdateVideo(request) {
       multipartBaseUrl,
       multiReplace,
     };
+
+    // console.log("added videoNetworkList", {
+    //   videoKey,
+    //   entry: videoNetworkList[request.tabId][videoKey],
+    // });
 
     // Manage the size of videoNetworkList
     if (Object.keys(videoNetworkList).length > MAX_NETWORK_LENGTH) {
@@ -241,6 +279,12 @@ function updateVideoUI() {
         }
       });
 
+      const videoClearBtn = document.getElementById("videos-advanced-clear");
+      videoClearBtn.addEventListener("click", () => {
+        videoNetworkList[currentTabId] = {};
+        updateVideoUI();
+      });
+
       videosSection.appendChild(videoDiv);
     }
   });
@@ -336,8 +380,21 @@ async function downloadVideo(url, tabTitle, current) {
 });
 
 function replaceMultiPartNumber(text, search, newNumber) {
-  const regex = new RegExp(`${search}(\\d+)`);
-  const result = text.replace(regex, `${search}${newNumber}`);
+  // if text ends in .ts, replace the single character right before .ts
+  // example: test.com/llama3a0.ts -> test.com/llama3a1.ts
+  let result;
+  if (text.endsWith(".ts")) {
+    const split = text.split(".ts");
+    const firstPart = split[0];
+    // replace last char with newNumber
+    const newLastChar = newNumber.toString();
+    result = firstPart.substring(0, firstPart.length - 1) + newLastChar + ".ts";
+  } else {
+    const regex = new RegExp(`${search}(\\d+)`);
+    result = text.replace(regex, `${search}${newNumber}`);
+  }
+
+  // console.log("replaceMultiPartNumber", { text, search, newNumber, result });
 
   return result;
 }
@@ -365,13 +422,6 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
     document.getElementById("multi-part-min-places").value,
     10
   );
-
-  console.log("Downloading multi-part video...", {
-    urlTemplate,
-    startNumber,
-    endNumber,
-    minPlaces,
-  });
 
   if (urlTemplate && !isNaN(startNumber) && !isNaN(endNumber)) {
     for (let i = startNumber; i <= endNumber; i++) {
@@ -453,7 +503,7 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
   const finalBlob = new Blob([combined], { type: "video/mp4" });
   let filename = `${tabTitle}.mp4` || "combined_video.mp4";
   filename = cleanURL(filename, true);
-  let extension = 'mp4';
+  let extension = "mp4";
 
   let filenameOverride = getVideoFilenameOverride() || null;
   let foldernameOverride = getVideoFoldernameOverride() || null;

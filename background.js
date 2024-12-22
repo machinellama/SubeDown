@@ -26,27 +26,32 @@ chrome.webRequest.onBeforeRequest.addListener(
       }
     }
 
-    chrome.tabs.get(details.tabId, (tab) => {
-      const tabTitle = tab.title;
-      const tabURL = tab.url;
+    if (details.tabId >= 0) {
+      chrome.tabs.get(details.tabId, (tab) => {
+        const tabTitle = tab.title;
+        const tabURL = tab.url;
 
-      const requestInfo = {
-        url: details.url,
-        method: details.method,
-        type: details.type,
-        tabId: details.tabId,
-        timeStamp: details.timeStamp,
-        parentURL: details.frameAncestors?.[0]?.url || null,
-        tabTitle: tabTitle || null,
-        tabURL: tabURL || null,
-        parentURLName: parentURLName || null,
-      };
+        const requestInfo = {
+          url: details.url,
+          method: details.method,
+          type: details.type,
+          tabId: details.tabId,
+          timeStamp: details.timeStamp,
+          parentURL: details.frameAncestors?.[0]?.url || null,
+          tabTitle: tabTitle || null,
+          tabURL: tabURL || null,
+          parentURLName: parentURLName || null,
+        };
 
-      // Send the request info to the sidebar if connected
-      if (sidebarPort) {
-        sidebarPort.postMessage({ type: "network-request", data: requestInfo });
-      }
-    });
+        // Send the request info to the sidebar if connected
+        if (sidebarPort) {
+          sidebarPort.postMessage({
+            type: "network-request",
+            data: requestInfo,
+          });
+        }
+      });
+    }
   },
   { urls: ["<all_urls>"] },
   [] // You can specify extraInfoSpec if needed, e.g., ["requestBody"]
