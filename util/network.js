@@ -384,11 +384,24 @@ function replaceMultiPartNumber(text, search, newNumber) {
   // example: test.com/llama3a0.ts -> test.com/llama3a1.ts
   let result;
   if (text.endsWith(".ts")) {
-    const split = text.split(".ts");
-    const firstPart = split[0];
-    // replace last char with newNumber
-    const newLastChar = newNumber.toString();
-    result = firstPart.substring(0, firstPart.length - 1) + newLastChar + ".ts";
+    const slashSplit = text.split("/");
+    const segmentPortion = slashSplit[slashSplit.length - 1];
+    const segmentSplit = segmentPortion.split("-");
+    // if segmentSplit[0] is a number
+    if (parseInt(segmentSplit[1]) !== NaN) {
+      // replace segmentSplit[1] with newNumber and create the full URL
+      segmentSplit[1] = newNumber.toString();
+      const newSegmentPortion = segmentSplit.join("-");
+      slashSplit[slashSplit.length - 1] = newSegmentPortion;
+      result = slashSplit.join("/");
+    } else {
+      const split = text.split(".ts");
+      const firstPart = split[0];
+
+      // replace last char with newNumber
+      const newLastChar = newNumber.toString();
+      result = firstPart.substring(0, firstPart.length - 1) + newLastChar + ".ts";
+    }
   } else {
     const regex = new RegExp(`${search}(\\d+)`);
     result = text.replace(regex, `${search}${newNumber}`);
