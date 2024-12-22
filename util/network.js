@@ -2,7 +2,14 @@ const videoNetworkList = {};
 const MAX_NETWORK_LENGTH = 100;
 const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
 
-const MULTIPART_INDICATORS = ["chunk-", "segment-", "part-", "stream-", "seg-"];
+const MULTIPART_INDICATORS = [
+  "chunk-",
+  "segment-",
+  "part-",
+  "stream-",
+  "seg-",
+  "ep.",
+];
 
 const videoExtensions = [
   ".mp4",
@@ -180,10 +187,31 @@ function updateVideoUI() {
       urlDiv.textContent = urlWithoutQuery;
       videoDiv.appendChild(urlDiv);
 
+      // video buttons
+      const buttonsDiv = document.createElement("div");
+      buttonsDiv.classList.add("video-buttons");
+      videoDiv.appendChild(buttonsDiv);
+
       const downloadBtn = document.createElement("button");
       downloadBtn.classList.add("download-btn");
       downloadBtn.textContent = "Download";
-      videoDiv.appendChild(downloadBtn);
+      buttonsDiv.appendChild(downloadBtn);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.classList.add("copy-btn");
+      copyBtn.textContent = "Copy URL";
+      buttonsDiv.appendChild(copyBtn);
+
+      copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(video.url).then(
+          () => {
+            console.log("URL copied to clipboard", video.url);
+          },
+          (err) => {
+            console.error("Failed to copy URL to clipboard: ", err);
+          }
+        );
+      });
 
       const loadingIndicator = document.createElement("div");
       loadingIndicator.classList.add("loading-indicator");
@@ -193,6 +221,7 @@ function updateVideoUI() {
       downloadBtn.addEventListener("click", async () => {
         loadingIndicator.style.display = "block";
         downloadBtn.style.display = "none";
+        copyBtn.style.display = "none";
 
         try {
           current.loadingIndicator = loadingIndicator;
@@ -208,6 +237,7 @@ function updateVideoUI() {
         } finally {
           loadingIndicator.style.display = "none";
           downloadBtn.style.display = "block";
+          copyBtn.style.display = "block";
         }
       });
 
@@ -318,22 +348,89 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
 
-  let segmentNumber = 1;
   const arrayBuffers = [];
 
-  while (true) {
-    const segmentUrl = replaceMultiPartNumber(url, multiReplace, segmentNumber);
+  const urlTemplate = document
+    .getElementById("multi-part-replace")
+    .value.trim();
+  const startNumber = parseInt(
+    document.getElementById("multi-part-start-number").value,
+    10
+  );
+  const endNumber = parseInt(
+    document.getElementById("multi-part-end-number").value,
+    10
+  );
+  const minPlaces = parseInt(
+    document.getElementById("multi-part-min-places").value,
+    10
+  );
 
-    loadingIndicator.textContent = `Downloading segment ${segmentNumber}...`;
+  console.log("Downloading multi-part video...", {
+    urlTemplate,
+    startNumber,
+    endNumber,
+    minPlaces,
+  });
 
-    const response = await fetch(segmentUrl);
-    if (!response.ok) {
-      // No more segments available
-      break;
+  if (urlTemplate && !isNaN(startNumber) && !isNaN(endNumber)) {
+    for (let i = startNumber; i <= endNumber; i++) {
+      const paddedNumber = i.toString().padStart(minPlaces, "0");
+
+      const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
+
+      loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
+
+      const response = await fetch(segmentUrl);
+      if (!response.ok) {
+        // Go to next number
+        continue;
+      }
+
+      const buf = await response.arrayBuffer();
+      arrayBuffers.push(buf);
     }
-    const buf = await response.arrayBuffer();
-    arrayBuffers.push(buf);
-    segmentNumber++;
+  } else if (urlTemplate && !isNaN(startNumber)) {
+    let i = startNumber;
+
+    while (true) {
+      const paddedNumber = i.toString().padStart(minPlaces, "0");
+
+      const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
+
+      loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
+
+      const response = await fetch(segmentUrl);
+      if (!response.ok) {
+        // Go to next number
+        break;
+      }
+
+      const buf = await response.arrayBuffer();
+      arrayBuffers.push(buf);
+      i++;
+    }
+  } else {
+    let segmentNumber = 1;
+
+    while (true) {
+      const segmentUrl = replaceMultiPartNumber(
+        url,
+        multiReplace,
+        segmentNumber
+      );
+
+      loadingIndicator.textContent = `Downloading segment ${segmentNumber}...`;
+
+      const response = await fetch(segmentUrl);
+      if (!response.ok) {
+        // No more segments available
+        break;
+      }
+      const buf = await response.arrayBuffer();
+      arrayBuffers.push(buf);
+      segmentNumber++;
+    }
   }
 
   if (arrayBuffers.length === 0) {
@@ -355,12 +452,30 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
 
   const finalBlob = new Blob([combined], { type: "video/mp4" });
   let filename = `${tabTitle}.mp4` || "combined_video.mp4";
+  filename = cleanURL(filename, true);
+  let extension = 'mp4';
+
+  let filenameOverride = getVideoFilenameOverride() || null;
+  let foldernameOverride = getVideoFoldernameOverride() || null;
+
+  if (filenameOverride) {
+    filenameOverride += `.${extension}`;
+  }
+
+  const folderName = foldernameOverride || "videos";
+  let downloadPath;
+
+  if (filenameOverride) {
+    downloadPath = `${folderName}/${filenameOverride}`;
+  } else {
+    downloadPath = `${folderName}/${filename}`;
+  }
 
   const objectUrl = URL.createObjectURL(finalBlob);
   (browser.downloads || chrome.downloads).download(
     {
       url: objectUrl,
-      filename: cleanURL(filename, true),
+      filename: downloadPath,
       conflictAction: "uniquify",
     },
     (downloadId) => {
@@ -378,12 +493,16 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 
 // Function to get Folder Name Override
 function getVideoFoldernameOverride() {
-  const override = document.getElementById("video-foldername-override").value.trim();
+  const override = document
+    .getElementById("video-foldername-override")
+    .value.trim();
   return override.length > 0 ? override : null;
 }
 
 // Function to get File Name Override
 function getVideoFilenameOverride() {
-  const override = document.getElementById("video-filename-override").value.trim();
+  const override = document
+    .getElementById("video-filename-override")
+    .value.trim();
   return override.length > 0 ? override : null;
 }

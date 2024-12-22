@@ -38,6 +38,7 @@
   border-radius: 3px;
   font-size: 1rem;
   transition: background 0.3s;
+  margin-left: 0.5rem;
 }
 
 .download-btn:hover {
@@ -47,6 +48,22 @@
 .download-btn:disabled {
   background: #696b7a;
   cursor: default;
+}
+
+.video-buttons {
+  display: flex;
+}
+
+.copy-btn {
+  background: black;
+  color: #dfe2ed;
+  border: none;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 1rem;
+  transition: background 0.3s;
+  margin-left: 0.5rem;
 }
 
 .video-section-description {
