@@ -423,6 +423,23 @@ async function downloadFullMultipartVideo(video, tabTitle, current) {
     10
   );
 
+  // if the url has "seg-" and ".m4s", then need to get an initial segment
+  if (url.includes("seg-") && url.includes(".m4s")) {
+    const regex = new RegExp(`seg-(\\d+)`);
+    let initURL = url.replace(regex, `init`);
+
+    // also replace the .m4s with .mp4
+    initURL = initURL.replace(".m4s", ".mp4");
+
+    const response = await fetch(initURL);
+    if (!response.ok) {
+      console.error("Failed to fetch initial segment: ", response.statusText);
+      return;
+    }
+    const buf = await response.arrayBuffer();
+    arrayBuffers.push(buf);
+  }
+
   if (urlTemplate && !isNaN(startNumber) && !isNaN(endNumber)) {
     for (let i = startNumber; i <= endNumber; i++) {
       const paddedNumber = i.toString().padStart(minPlaces, "0");
