@@ -496,7 +496,7 @@ async function downloadM3U8Video(video, tabTitle, current) {
     }
 
     // Define the maximum number of segments per part
-    const MAX_SEGMENTS_PER_PART = 1500;
+    const MAX_SEGMENTS_PER_PART = 500;
 
     // Calculate the number of parts needed
     const totalParts = Math.ceil(segmentUrls.length / MAX_SEGMENTS_PER_PART);
@@ -515,7 +515,7 @@ async function downloadM3U8Video(video, tabTitle, current) {
 
       for (let i = 0; i < currentSegmentUrls.length; i++) {
         const segmentUrl = currentSegmentUrls[i];
-        loadingIndicator.textContent = `Downloading part ${part}: segment ${i + 1} of ${currentSegmentUrls.length}...`;
+        loadingIndicator.textContent = `Downloading part ${part}/${totalParts}: segment ${i + 1} of ${currentSegmentUrls.length}...`;
 
         try {
           const segmentResponse = await fetch(segmentUrl);
