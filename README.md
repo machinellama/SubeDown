@@ -23,9 +23,8 @@ Github: https://github.com/machinellama/SubeDown
     - Will apply refresh and download settings to each page
 - **Video Downloader**: Download videos on a web page
   - Override the file name or folder name for downloads
-  - Supports segmented videos (e.g. .ts segment files)
+  - Supports segmented videos (including .ts, .m4s, and .m3u8 videos)
     - URL template for segmented files; e.g. `https://example.com/video/seg-a3b3{{number}}.ts`; The number usually starts at 0 or 1 and increments by 1; will keep downloading segments until one fails, then all segments will be combined into a single mp4 video
-    - Supports .m4s segments which require an init segment first
 
 ### Troubleshooting
   - Videos are still a work in progress, but it works for many cases
