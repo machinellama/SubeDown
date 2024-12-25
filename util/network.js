@@ -217,6 +217,8 @@ function updateVideoUI() {
     const currentKeys = Object.keys(current);
 
     for (const key of currentKeys) {
+      // console.log('key', key);
+
       const video = current[key];
 
       if (!video || !video.url) {
@@ -338,6 +340,8 @@ function updateVideoUI() {
       }
 
       const loadingIndicator = document.createElement("div");
+      const keyWithoutFirstPart = key.split(":").slice(1).join(":");
+      loadingIndicator.id = `video-loading-${keyWithoutFirstPart}`;
       loadingIndicator.classList.add("loading-indicator");
       loadingIndicator.textContent = "Starting Download...";
       loadingIndicator.style.display = "none"; // Hide initially
@@ -880,3 +884,63 @@ function cleanURL(url, replaceSpaces = false) {
   }
   return cleaned;
 }
+
+// Function to log download info every second
+function logDownloadInfo() {
+  const downloadQuery = { state: "in_progress" };
+  browser.downloads.search(downloadQuery).then(downloads => {
+    downloads.forEach(downloadItem => {
+      const url = downloadItem.url;
+      const key = url.split('?')[0];
+      const loadingIndicator = document.getElementById(`video-loading-${key}`);
+
+      // console.log('in progress', {
+      //   downloadItem,
+      //   url,
+      //   key,
+      //   loadingIndicator
+      // });
+
+      if (loadingIndicator) {
+        const currentMB = downloadItem.bytesReceived / 1024 / 1024;
+        const totalMB = downloadItem.totalBytes / 1024 / 1024;
+        const progress = Math.round((currentMB / totalMB) * 100);
+        loadingIndicator.style.display = "block";
+        loadingIndicator.textContent = `Downloading... ${
+          progress
+        }% (${currentMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB)`;
+      }
+    });
+  });
+
+  // completed
+  const completedQuery = { state: "complete" };
+  browser.downloads.search(completedQuery).then(downloads => {
+    downloads.forEach(downloadItem => {
+      const url = downloadItem.url;
+      const key = url.split('?')[0];
+      const loadingIndicator = document.getElementById(`video-loading-${key}`);
+      if (loadingIndicator) {
+        loadingIndicator.style.display = "block";
+        loadingIndicator.textContent = "Download complete!";
+      }
+    });
+  });
+
+  // interrupted
+  const interruptedQuery = { state: "interrupted" };
+  browser.downloads.search(interruptedQuery).then(downloads => {
+    downloads.forEach(downloadItem => {
+      const url = downloadItem.url;
+      const key = url.split('?')[0];
+      const loadingIndicator = document.getElementById(`video-loading-${key}`);
+      if (loadingIndicator) {
+        loadingIndicator.style.display = "block";
+        loadingIndicator.textContent = "Download interrupted";
+      }
+    });
+  });
+}
+
+// Set an interval to run the function every second
+setInterval(logDownloadInfo, 1000);
