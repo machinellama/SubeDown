@@ -34,7 +34,7 @@ const invalidTypes = [
   ".css",
   ".js",
   "/preview",
-  "/playlist.m3u8"
+  "/playlist.m3u8",
 ];
 
 const validTypes = ["stream-1"];
@@ -75,6 +75,15 @@ function isVideoRequest(request) {
       return false;
     }
 
+    const lastDotSplit = url.split(".").pop();
+    if (
+      lastDotSplit &&
+      lastDotSplit.length <= 5 &&
+      !videoExtensions.some((ext) => url.includes(ext))
+    ) {
+      return false;
+    }
+
     if (!videoExtensions.some((ext) => url.includes(ext))) {
       return false;
     }
@@ -88,6 +97,15 @@ function isVideoRequest(request) {
 
   if (validTypes.some((ext) => url.includes(ext))) {
     return true;
+  }
+
+  const lastDotSplit = url.split(".").pop();
+  if (
+    lastDotSplit &&
+    lastDotSplit.length <= 5 &&
+    !videoExtensions.some((ext) => url.includes(ext))
+  ) {
+    return false;
   }
 
   return videoExtensions.some((ext) => url.includes(ext));
@@ -519,7 +537,11 @@ async function downloadM3U8Video(video, tabTitle, current) {
 
       for (let i = 0; i < currentSegmentUrls.length; i++) {
         const segmentUrl = currentSegmentUrls[i];
-        loadingIndicator.textContent = `Downloading part ${part}/${totalParts}: segment ${i + 1} of ${currentSegmentUrls.length}...`;
+        loadingIndicator.textContent = `Downloading part ${part}/${totalParts}: segment ${
+          i + 1
+        } of ${
+          currentSegmentUrls.length
+        }... (leaving tab will continue download, but you won't see progress)`;
 
         try {
           const segmentResponse = await fetch(segmentUrl);
@@ -538,7 +560,9 @@ async function downloadM3U8Video(video, tabTitle, current) {
       }
 
       if (arrayBuffers.length === 0) {
-        console.error(`No segments were successfully downloaded for part ${part}.`);
+        console.error(
+          `No segments were successfully downloaded for part ${part}.`
+        );
         continue; // Skip this part if no segments were downloaded
       }
 
@@ -579,7 +603,10 @@ async function downloadM3U8Video(video, tabTitle, current) {
         },
         (downloadId) => {
           if (chrome.runtime && chrome.runtime.lastError) {
-            console.error("Download failed: ", chrome.runtime.lastError.message);
+            console.error(
+              "Download failed: ",
+              chrome.runtime.lastError.message
+            );
           } else {
             current.downloadId = downloadId;
             current.progress = 100;
@@ -743,7 +770,7 @@ async function downloadFullMultipartVideo(
 
       const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
 
-      loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
+      loadingIndicator.textContent = `Downloading segment ${paddedNumber}... (leaving tab will continue download, but you won't see progress)`;
 
       const response = await fetch(segmentUrl);
       if (!response.ok) {
@@ -762,7 +789,7 @@ async function downloadFullMultipartVideo(
 
       const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
 
-      loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
+      loadingIndicator.textContent = `Downloading segment ${paddedNumber}... (leaving tab will continue download, but you won't see progress)`;
 
       const response = await fetch(segmentUrl);
       if (!response.ok) {
@@ -784,7 +811,7 @@ async function downloadFullMultipartVideo(
         segmentNumber
       );
 
-      loadingIndicator.textContent = `Downloading segment ${segmentNumber}...`;
+      loadingIndicator.textContent = `Downloading segment ${segmentNumber}... (leaving tab will continue download, but you won't see progress)`;
 
       const response = await fetch(segmentUrl);
       if (!response.ok) {
@@ -888,10 +915,10 @@ function cleanURL(url, replaceSpaces = false) {
 // Function to log download info every second
 function logDownloadInfo() {
   const downloadQuery = { state: "in_progress" };
-  browser.downloads.search(downloadQuery).then(downloads => {
-    downloads.forEach(downloadItem => {
+  browser.downloads.search(downloadQuery).then((downloads) => {
+    downloads.forEach((downloadItem) => {
       const url = downloadItem.url;
-      const key = url.split('?')[0];
+      const key = url.split("?")[0];
       const loadingIndicator = document.getElementById(`video-loading-${key}`);
 
       // console.log('in progress', {
@@ -906,19 +933,19 @@ function logDownloadInfo() {
         const totalMB = downloadItem.totalBytes / 1024 / 1024;
         const progress = Math.round((currentMB / totalMB) * 100);
         loadingIndicator.style.display = "block";
-        loadingIndicator.textContent = `Downloading... ${
-          progress
-        }% (${currentMB.toFixed(2)} MB / ${totalMB.toFixed(2)} MB)`;
+        loadingIndicator.textContent = `Downloading... ${progress}% (${currentMB.toFixed(
+          2
+        )} MB / ${totalMB.toFixed(2)} MB)`;
       }
     });
   });
 
   // completed
   const completedQuery = { state: "complete" };
-  browser.downloads.search(completedQuery).then(downloads => {
-    downloads.forEach(downloadItem => {
+  browser.downloads.search(completedQuery).then((downloads) => {
+    downloads.forEach((downloadItem) => {
       const url = downloadItem.url;
-      const key = url.split('?')[0];
+      const key = url.split("?")[0];
       const loadingIndicator = document.getElementById(`video-loading-${key}`);
       if (loadingIndicator) {
         loadingIndicator.style.display = "block";
@@ -929,10 +956,10 @@ function logDownloadInfo() {
 
   // interrupted
   const interruptedQuery = { state: "interrupted" };
-  browser.downloads.search(interruptedQuery).then(downloads => {
-    downloads.forEach(downloadItem => {
+  browser.downloads.search(interruptedQuery).then((downloads) => {
+    downloads.forEach((downloadItem) => {
       const url = downloadItem.url;
-      const key = url.split('?')[0];
+      const key = url.split("?")[0];
       const loadingIndicator = document.getElementById(`video-loading-${key}`);
       if (loadingIndicator) {
         loadingIndicator.style.display = "block";
