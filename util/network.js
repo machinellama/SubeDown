@@ -234,8 +234,15 @@ function updateVideoUI() {
 
     const currentKeys = Object.keys(current);
 
-    for (const key of currentKeys) {
-      // console.log('key', key);
+    const orderedKeysByTimestamp = currentKeys
+      .filter((key) => {
+        const video = current[key];
+        return video && video.url && video.timeStamp;
+      })
+      .sort((a, b) => current[b].timeStamp - current[a].timeStamp);
+
+    for (const key of orderedKeysByTimestamp) {
+      // console.log({ key, current });
 
       const video = current[key];
 
