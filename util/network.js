@@ -1,5 +1,4 @@
 const videoNetworkList = {};
-const MAX_NETWORK_LENGTH = 100;
 const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
 
 const MULTIPART_INDICATORS = [
@@ -26,6 +25,7 @@ const videoExtensions = [
 
 const invalidTypes = [
   ".mp3",
+  ".gif",
   "-pic.",
   ".js",
   "/images/",
@@ -33,11 +33,10 @@ const invalidTypes = [
   "thumb-",
   ".css",
   ".js",
-  "/preview",
-  "/playlist.m3u8",
+  "/preview"
 ];
 
-const validTypes = ["stream-1"];
+const validTypes = ["stream-1", "cdn3x"];
 
 // Utility function to determine if a request is a video
 function isVideoRequest(request) {
@@ -47,7 +46,7 @@ function isVideoRequest(request) {
 
   const url = request.url;
 
-  // console.log("isVideoRequest", {
+  // console.log("isVideoRequest", request.url, {
   //   request,
   //   includesVideoTypes: VIDEO_TYPES.includes(request.type),
   //   includesVideoExtensions: videoExtensions.some((ext) => url.includes(ext)),
@@ -95,10 +94,6 @@ function isVideoRequest(request) {
     return false;
   }
 
-  if (validTypes.some((ext) => url.includes(ext))) {
-    return true;
-  }
-
   const lastDotSplit = url.split(".").pop();
   if (
     lastDotSplit &&
@@ -140,7 +135,7 @@ function generateVideoKey(request) {
 function addOrUpdateVideo(request) {
   const videoKey = generateVideoKey(request);
 
-  // console.log("addOrUpdateVideo", {
+  // console.log("addOrUpdateVideo", request.url, {
   //   request,
   //   videoKey,
   //   isVideoRequest: isVideoRequest(request),
@@ -199,17 +194,6 @@ function addOrUpdateVideo(request) {
       multipartBaseUrl,
       multiReplace,
     };
-
-    // Manage the size of videoNetworkList
-    if (Object.keys(videoNetworkList).length > MAX_NETWORK_LENGTH) {
-      // Remove the oldest entry
-      const oldestKey = Object.keys(videoNetworkList).reduce((a, b) => {
-        return videoNetworkList[a].timeStamp < videoNetworkList[b].timeStamp
-          ? a
-          : b;
-      });
-      delete videoNetworkList[oldestKey];
-    }
 
     updateVideoUI();
   }

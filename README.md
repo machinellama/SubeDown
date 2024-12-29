@@ -28,7 +28,17 @@ Github: https://github.com/machinellama/SubeDown
 
 ### Troubleshooting
   - Videos are still a work in progress, but it works for many cases
-  - If a video doesn't appear in the list, try clicking "clear" and refresh the page, then start playing the video to ensure it's detected
+  - If a video doesn't appear in the list:
+    - Try clicking "clear" and refresh the page, then start playing the video to ensure it's detected
+    - Also try closing and reopening the extension sidebar, then refreshing
+  - If a video download doesn't start:
+    - Check if you can play the video on the webpage
+    - If you're using a VPN, try changing to a different VPN server since some video providers block certain servers
+    - Check if the website has bot protection, like cloudflare; if so, you may need to manually bypass protections before starting the download
+    - Try copying the video URL with the "Copy URL" button, paste it into a new tab, and see if the video plays or is blocked
+  - If video progress disappears:
+    - Don't worry! Progress may disappear if you change tabs or close the sidebar, but the download is still happening in the background
+    - As long as you don't close your browser window, the download should appear in your download folder after a few minutes
 
 ## Screenshots
 

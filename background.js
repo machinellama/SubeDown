@@ -30,6 +30,8 @@ chrome.webRequest.onBeforeRequest.addListener(
 
     if (details.tabId >= 0) {
       chrome.tabs.get(details.tabId, (tab) => {
+        if (!tab) return;
+
         const tabTitle = tab.title;
         const tabURL = tab.url;
 
