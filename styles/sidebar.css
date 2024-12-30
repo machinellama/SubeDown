@@ -82,3 +82,21 @@ body {
 #download-all:hover {
   background: #389641;
 }
+
+#global-downloads {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #1a5296;
+  color: white;
+  border-top: 1px solid #ccc;
+  padding: 5px;
+  display: none;
+  max-height: 200px; /* Set the maximum height */
+  overflow-y: auto; /* Enable vertical scrolling if content exceeds max height */
+}
+
+#global-downloads h3 {
+  margin: 0 0 10px 0;
+}

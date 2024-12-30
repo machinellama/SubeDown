@@ -103,12 +103,14 @@ async function showSection(section) {
     document.getElementById("videos-section").style.display = "none";
     document.getElementById("images-tab").classList.add("active");
     document.getElementById("videos-tab").classList.remove("active");
+    document.getElementById("global-downloads").style.display = "none";
     await fetchImages();
   } else if (section === "videos") {
     document.getElementById("images-section").style.display = "none";
     document.getElementById("videos-section").style.display = "block";
     document.getElementById("images-tab").classList.remove("active");
     document.getElementById("videos-tab").classList.add("active");
+    document.getElementById("global-downloads").style.display = "block";
   }
 }
 

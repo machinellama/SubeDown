@@ -1,6 +1,11 @@
-const videoNetworkList = {};
-const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
+// Make sure to use only 2 spaces for indentation in this entire file
 
+// Global data structures
+const videoNetworkList = {};
+let globalDownloads = {}; // tracks all downloads (single, multi-part, m3u8, etc.)
+
+// Constants
+const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
 const MULTIPART_INDICATORS = [
   "chunk-",
   "segment-",
@@ -9,7 +14,6 @@ const MULTIPART_INDICATORS = [
   "ep.",
   "hls-",
 ];
-
 const videoExtensions = [
   ".mp4",
   ".webm",
@@ -22,7 +26,6 @@ const videoExtensions = [
   ".m4s",
   ".m3u8",
 ];
-
 const invalidTypes = [
   ".mp3",
   ".gif",
@@ -33,9 +36,8 @@ const invalidTypes = [
   "thumb-",
   ".css",
   ".js",
-  "/preview"
+  "/preview",
 ];
-
 const validTypes = ["stream-1", "cdn3x"];
 
 // Utility function to determine if a request is a video
@@ -45,14 +47,6 @@ function isVideoRequest(request) {
   }
 
   const url = request.url;
-
-  // console.log("isVideoRequest", request.url, {
-  //   request,
-  //   includesVideoTypes: VIDEO_TYPES.includes(request.type),
-  //   includesVideoExtensions: videoExtensions.some((ext) => url.includes(ext)),
-  //   includesInvalidTypes: invalidTypes.some((ext) => url.includes(ext)),
-  //   includesValidTypes: validTypes.some((ext) => url.includes(ext)),
-  // });
 
   // Check the 'type' field
   if (VIDEO_TYPES.includes(request.type)) {
@@ -135,12 +129,12 @@ function generateVideoKey(request) {
 function addOrUpdateVideo(request) {
   const videoKey = generateVideoKey(request);
 
-  // console.log("addOrUpdateVideo", request.url, {
-  //   request,
-  //   videoKey,
-  //   isVideoRequest: isVideoRequest(request),
-  //   existing: videoNetworkList[request.tabId]?.[videoKey],
-  // });
+  console.log("addOrUpdateVideo", request.url, {
+    request,
+    videoKey,
+    isVideoRequest: isVideoRequest(request),
+    existing: videoNetworkList[request.tabId]?.[videoKey],
+  });
 
   if (isVideoRequest(request)) {
     if (!videoNetworkList[request.tabId]) {
@@ -161,10 +155,6 @@ function addOrUpdateVideo(request) {
         for (const indicator of MULTIPART_INDICATORS) {
           const index = pathname.toLowerCase().indexOf(indicator);
           if (index !== -1) {
-            // e.g. https://example.com/video/seg-1.ts
-            // base would be everything up to seg-
-            // In this case we keep indicator to easily append numbers:
-            // base: https://example.com/video/seg-
             multipartBaseUrl = `${url.protocol}//${
               url.host
             }${url.pathname.substring(0, index + indicator.length)}`;
@@ -190,7 +180,7 @@ function addOrUpdateVideo(request) {
       parts: [], // Array to hold multipart segments if needed
       lastUpdated: Date.now(),
       isMultipart,
-      isM3U8, // Add the isM3U8 flag
+      isM3U8,
       multipartBaseUrl,
       multiReplace,
     };
@@ -201,7 +191,6 @@ function addOrUpdateVideo(request) {
 
 function updateVideoUI() {
   const videosSection = document.getElementById("videos-list");
-
   if (!videosSection) {
     return;
   }
@@ -226,17 +215,13 @@ function updateVideoUI() {
       .sort((a, b) => current[b].timeStamp - current[a].timeStamp);
 
     for (const key of orderedKeysByTimestamp) {
-      // console.log({ key, current });
-
       const video = current[key];
-
       if (!video || !video.url) {
         continue;
       }
 
       const videoDiv = document.createElement("div");
       videoDiv.classList.add("video-entry");
-      // add id and name to the videoDiv
       videoDiv.id = `video-${key}`;
       videoDiv.name = video.url;
       videoDiv.key = key;
@@ -261,14 +246,12 @@ function updateVideoUI() {
       let minPlacesInput;
 
       if (video.isMultipart || video.isM3U8) {
-        // Modify condition to include isM3U8
         videoAdvancedSection = document.createElement("div");
         videoAdvancedSection.id = `video-advanced-${key}`;
         videoAdvancedSection.style.display = "none";
         videoAdvancedSection.style.marginBottom = "10px";
         videoDiv.appendChild(videoAdvancedSection);
 
-        // advanced section inputs
         const advancedTitle = document.createElement("div");
         advancedTitle.classList.add("video-advanced-title");
         advancedTitle.textContent = video.isM3U8
@@ -278,28 +261,24 @@ function updateVideoUI() {
 
         if (!video.isM3U8) {
           // Only show multipart inputs if not m3u8
-          // Replace in URL
           replaceInput = document.createElement("input");
           replaceInput.id = "multi-part-replace";
           replaceInput.type = "text";
           replaceInput.placeholder = "e.g. seg-{{number}}";
           videoAdvancedSection.appendChild(replaceInput);
 
-          // Start Number:
           startNumberInput = document.createElement("input");
           startNumberInput.id = "multi-part-start-number";
           startNumberInput.type = "number";
           startNumberInput.placeholder = "Start Number";
           videoAdvancedSection.appendChild(startNumberInput);
 
-          // End Number:
           endNumberInput = document.createElement("input");
           endNumberInput.id = "multi-part-end-number";
           endNumberInput.type = "number";
           endNumberInput.placeholder = "End Number";
           videoAdvancedSection.appendChild(endNumberInput);
 
-          // Minimum Places:
           minPlacesInput = document.createElement("input");
           minPlacesInput.id = "multi-part-min-places";
           minPlacesInput.type = "number";
@@ -308,12 +287,10 @@ function updateVideoUI() {
           minPlacesInput.step = "1";
           videoAdvancedSection.appendChild(minPlacesInput);
         } else {
-          // For m3u8, you might want to add specific settings if needed
-          // Currently, no additional inputs are required
+          // For m3u8, could add specific settings if needed
         }
       }
 
-      // video buttons
       const buttonsDiv = document.createElement("div");
       buttonsDiv.classList.add("video-buttons");
       videoDiv.appendChild(buttonsDiv);
@@ -337,7 +314,6 @@ function updateVideoUI() {
 
       let videoAdvancedBtn;
       if (video.isMultipart || video.isM3U8) {
-        // Modify condition to include isM3U8
         videoAdvancedBtn = document.createElement("button");
         videoAdvancedBtn.classList.add("copy-btn");
         videoAdvancedBtn.textContent = "Advanced";
@@ -353,7 +329,7 @@ function updateVideoUI() {
       loadingIndicator.id = `video-loading-${keyWithoutFirstPart}`;
       loadingIndicator.classList.add("loading-indicator");
       loadingIndicator.textContent = "Starting Download...";
-      loadingIndicator.style.display = "none"; // Hide initially
+      loadingIndicator.style.display = "none";
       videoDiv.appendChild(loadingIndicator);
 
       downloadBtn.addEventListener("click", async () => {
@@ -362,7 +338,6 @@ function updateVideoUI() {
         copyBtn.style.display = "none";
 
         if (video.isMultipart || video.isM3U8) {
-          // Modify condition to include isM3U8
           if (videoAdvancedBtn) {
             videoAdvancedBtn.style.display = "none";
           }
@@ -374,10 +349,8 @@ function updateVideoUI() {
         try {
           current.loadingIndicator = loadingIndicator;
           if (video.isM3U8) {
-            // Handle m3u8 downloads
             await downloadM3U8Video(video, tabTitle, current);
           } else if (video.isMultipart) {
-            // Handle multi-part downloads
             await downloadFullMultipartVideo(video, tabTitle, current, {
               replace: replaceInput ? replaceInput.value : "",
               startNumber: startNumberInput ? startNumberInput.value : "",
@@ -385,7 +358,6 @@ function updateVideoUI() {
               minPlaces: minPlacesInput ? minPlacesInput.value : "",
             });
           } else {
-            // Normal single video download
             await downloadVideo(video.url, tabTitle, current);
           }
         } catch (err) {
@@ -396,12 +368,10 @@ function updateVideoUI() {
           copyBtn.style.display = "block";
 
           if (video.isMultipart || video.isM3U8) {
-            // Modify condition to include isM3U8
             if (videoAdvancedBtn) {
               videoAdvancedBtn.style.display = "block";
             }
             if (videoAdvancedSection && !video.isM3U8) {
-              // Hide only if not m3u8
               videoAdvancedSection.style.display = "none";
             }
           }
@@ -410,7 +380,6 @@ function updateVideoUI() {
 
       const videoClearBtn = document.getElementById("videos-advanced-clear");
       if (videoClearBtn) {
-        // Ensure the element exists
         videoClearBtn.addEventListener("click", () => {
           videoNetworkList[currentTabId] = {};
           updateVideoUI();
@@ -451,7 +420,6 @@ async function downloadVideo(url, tabTitle, current) {
     let foldernameOverride = getVideoFoldernameOverride() || null;
 
     if (filenameOverride) {
-      // Construct the new filename
       filenameOverride += `.${extension}`;
     }
 
@@ -459,7 +427,6 @@ async function downloadVideo(url, tabTitle, current) {
     let downloadPath;
 
     if (filenameOverride) {
-      // Use the overridden filename provided by the sidebar
       downloadPath = `${folderName}/${filenameOverride}`;
     } else {
       downloadPath = `${folderName}/${filename}`;
@@ -491,35 +458,42 @@ async function downloadM3U8Video(video, tabTitle, current) {
   const url = video.url;
   const loadingIndicator = current.loadingIndicator;
 
+  // Create a unique ID for this multi-segment download
+  const uniqueDownloadId = `m3u8-${video.tabTitle}-${Date.now()}`;
+  globalDownloads[uniqueDownloadId] = {
+    url,
+    progress: 0,
+    state: "in_progress",
+  };
+  updateGlobalDownloadsUI();
+
   try {
-    // Fetch the m3u8 playlist
     loadingIndicator.textContent = `Fetching playlist...`;
     const response = await fetch(url);
     if (!response.ok) {
       console.error("Failed to fetch m3u8 playlist: ", response.statusText);
+      globalDownloads[uniqueDownloadId].state = "interrupted";
+      updateGlobalDownloadsUI();
       return;
     }
     const playlistText = await response.text();
 
-    // Parse the playlist to get segment URLs
     const segmentUrls = parseM3U8Playlist(playlistText, url);
     if (segmentUrls.length === 0) {
       console.error("No segments found in the m3u8 playlist.");
+      globalDownloads[uniqueDownloadId].state = "interrupted";
+      updateGlobalDownloadsUI();
       return;
     }
 
-    // Define the maximum number of segments per part
     const MAX_SEGMENTS_PER_PART = 500;
-
-    // Calculate the number of parts needed
     const totalParts = Math.ceil(segmentUrls.length / MAX_SEGMENTS_PER_PART);
-
-    loadingIndicator.textContent = `Found ${segmentUrls.length} segments. Preparing to download ${totalParts} part(s)...`;
+    const totalSegments = segmentUrls.length;
+    let segmentsDownloaded = 0;
 
     for (let part = 1; part <= totalParts; part++) {
-      // Determine the start and end indices for the current part
       const startIdx = (part - 1) * MAX_SEGMENTS_PER_PART;
-      const endIdx = Math.min(part * MAX_SEGMENTS_PER_PART, segmentUrls.length);
+      const endIdx = Math.min(part * MAX_SEGMENTS_PER_PART, totalSegments);
       const currentSegmentUrls = segmentUrls.slice(startIdx, endIdx);
 
       loadingIndicator.textContent = `Downloading part ${part} of ${totalParts} (${currentSegmentUrls.length} segments)...`;
@@ -530,9 +504,7 @@ async function downloadM3U8Video(video, tabTitle, current) {
         const segmentUrl = currentSegmentUrls[i];
         loadingIndicator.textContent = `Downloading part ${part}/${totalParts}: segment ${
           i + 1
-        } of ${
-          currentSegmentUrls.length
-        }... (leaving tab will continue download, but you won't see progress)`;
+        } of ${currentSegmentUrls.length}...`;
 
         try {
           const segmentResponse = await fetch(segmentUrl);
@@ -540,11 +512,17 @@ async function downloadM3U8Video(video, tabTitle, current) {
             console.warn(
               `Failed to fetch segment ${segmentUrl}: ${segmentResponse.statusText}`
             );
-            continue; // Skip failed segments
+            continue;
           }
 
           const buffer = await segmentResponse.arrayBuffer();
           arrayBuffers.push(buffer);
+          segmentsDownloaded++;
+          // Update global download progress
+          globalDownloads[uniqueDownloadId].progress = Math.round(
+            (segmentsDownloaded / totalSegments) * 100
+          );
+          updateGlobalDownloadsUI();
         } catch (err) {
           console.error(`Error fetching segment ${segmentUrl}: `, err);
         }
@@ -554,12 +532,11 @@ async function downloadM3U8Video(video, tabTitle, current) {
         console.error(
           `No segments were successfully downloaded for part ${part}.`
         );
-        continue; // Skip this part if no segments were downloaded
+        continue;
       }
 
-      // Combine all segments into a single Blob
       const combinedBuffer = combineArrayBuffers(arrayBuffers);
-      const finalBlob = new Blob([combinedBuffer], { type: "video/mp4" }); // Assuming MP4 container
+      const finalBlob = new Blob([combinedBuffer], { type: "video/mp4" });
 
       let filename = `${tabTitle}`;
       if (totalParts > 1) {
@@ -584,7 +561,6 @@ async function downloadM3U8Video(video, tabTitle, current) {
         downloadPath = `${folderName}/${filename}`;
       }
 
-      // Create an object URL for the Blob and initiate the download
       const objectUrl = URL.createObjectURL(finalBlob);
       (browser.downloads || chrome.downloads).download(
         {
@@ -606,15 +582,20 @@ async function downloadM3U8Video(video, tabTitle, current) {
         }
       );
 
-      // Revoke the object URL after some time to free up memory
       setTimeout(() => {
         URL.revokeObjectURL(objectUrl);
       }, 10000);
     }
 
+    // After finishing all parts, mark as complete
+    globalDownloads[uniqueDownloadId].progress = 100;
+    globalDownloads[uniqueDownloadId].state = "complete";
+    updateGlobalDownloadsUI();
     loadingIndicator.textContent = "All parts downloaded!";
   } catch (error) {
     console.error("Error downloading m3u8 video: ", error);
+    globalDownloads[uniqueDownloadId].state = "interrupted";
+    updateGlobalDownloadsUI();
   }
 }
 
@@ -628,7 +609,6 @@ function parseM3U8Playlist(playlistText, baseUrl) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed && !trimmed.startsWith("#")) {
-      // Handle relative URLs
       if (trimmed.startsWith("http")) {
         segmentUrls.push(trimmed);
       } else {
@@ -660,6 +640,7 @@ function combineArrayBuffers(arrayBuffers) {
 (browser.downloads || chrome.downloads).onChanged.addListener((delta) => {
   const downloadId = delta.id;
 
+  // Update per-video approach
   const current = Object.values(videoNetworkList)
     .flatMap((tabVideos) => Object.values(tabVideos))
     .find((video) => video.downloadId === downloadId);
@@ -667,32 +648,34 @@ function combineArrayBuffers(arrayBuffers) {
 
   if (current) {
     if (delta.state && delta.state.current === "complete") {
-      loadingIndicator.textContent = "Download complete!";
+      if (loadingIndicator) {
+        loadingIndicator.textContent = "Download complete!";
+      }
     } else if (delta.state && delta.state.current === "interrupted") {
-      loadingIndicator.textContent = "Download interrupted";
+      if (loadingIndicator) {
+        loadingIndicator.textContent = "Download interrupted";
+      }
     }
     if (delta.bytesReceived !== undefined && delta.totalBytes !== undefined) {
       current.progress = Math.round(
         (delta.bytesReceived / delta.totalBytes) * 100
       );
-      loadingIndicator.textContent = `Downloading... ${current.progress}%`;
+      if (loadingIndicator) {
+        loadingIndicator.textContent = `Downloading... ${current.progress}%`;
+      }
     }
-
     updateVideoUI();
   }
 });
 
+// For the standard multi-part approach
 function replaceMultiPartNumber(text, search, newNumber) {
-  // if text ends in .ts, replace the single character right before .ts
-  // example: test.com/llama3a0.ts -> test.com/llama3a1.ts
   let result;
   if (text.endsWith(".ts")) {
     const slashSplit = text.split("/");
     const segmentPortion = slashSplit[slashSplit.length - 1];
     const segmentSplit = segmentPortion.split("-");
-    // if segmentSplit[1] is a number
     if (segmentSplit.length > 1 && !isNaN(parseInt(segmentSplit[1], 10))) {
-      // replace segmentSplit[1] with newNumber and create the full URL
       segmentSplit[1] = newNumber.toString();
       const newSegmentPortion = segmentSplit.join("-");
       slashSplit[slashSplit.length - 1] = newSegmentPortion;
@@ -700,8 +683,6 @@ function replaceMultiPartNumber(text, search, newNumber) {
     } else {
       const split = text.split(".ts");
       const firstPart = split[0];
-
-      // replace last char with newNumber
       const newLastChar = newNumber.toString();
       result =
         firstPart.substring(0, firstPart.length - 1) + newLastChar + ".ts";
@@ -710,13 +691,10 @@ function replaceMultiPartNumber(text, search, newNumber) {
     const regex = new RegExp(`${search}(\\d+)`);
     result = text.replace(regex, `${search}${newNumber}`);
   }
-
-  // console.log("replaceMultiPartNumber", { text, search, newNumber, result });
-
   return result;
 }
 
-// Attempt to download a multi-part video by incrementing segment numbers until it fails
+// Attempt to download a multi-part video by incrementing segment numbers
 async function downloadFullMultipartVideo(
   video,
   tabTitle,
@@ -727,153 +705,177 @@ async function downloadFullMultipartVideo(
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
 
-  // console.log('downloadFullMultipartVideo', { video, tabTitle, current, options });
+  console.log({ video });
 
-  const arrayBuffers = [];
+  // Create a unique ID for this multi-part download
+  const uniqueDownloadId = `multipart-${video.tabTitle}-${Date.now()}`;
+  globalDownloads[uniqueDownloadId] = {
+    url,
+    progress: 0,
+    state: "in_progress",
+  };
+  updateGlobalDownloadsUI(false);
 
-  const urlTemplate = options.replace?.trim();
-  const startNumber = parseInt(options.startNumber, 10);
-  const endNumber = parseInt(options.endNumber, 10);
-  const minPlaces = parseInt(options.minPlaces, 10);
+  try {
+    const arrayBuffers = [];
 
-  // console.log('downloadFullMultipartVideo', { urlTemplate, startNumber, endNumber, minPlaces });
+    const urlTemplate = options.replace?.trim();
+    const startNumber = parseInt(options.startNumber, 10);
+    const endNumber = parseInt(options.endNumber, 10);
+    const minPlaces = parseInt(options.minPlaces, 10);
 
-  // if the url has "seg-" and ".m4s", then need to get an initial segment
-  if (url.includes("seg-") && url.includes(".m4s")) {
-    const regex = new RegExp(`seg-(\\d+)`);
-    let initURL = url.replace(regex, `init`);
+    if (url.includes("seg-") && url.includes(".m4s")) {
+      const regex = new RegExp(`seg-(\\d+)`);
+      let initURL = url.replace(regex, `init`);
+      initURL = initURL.replace(".m4s", ".mp4");
 
-    // also replace the .m4s with .mp4
-    initURL = initURL.replace(".m4s", ".mp4");
+      const response = await fetch(initURL);
+      if (!response.ok) {
+        console.error("Failed to fetch initial segment: ", response.statusText);
+        globalDownloads[uniqueDownloadId].state = "interrupted";
+        updateGlobalDownloadsUI(false);
+        return;
+      }
+      const buf = await response.arrayBuffer();
+      arrayBuffers.push(buf);
+    }
 
-    const response = await fetch(initURL);
-    if (!response.ok) {
-      console.error("Failed to fetch initial segment: ", response.statusText);
+    let segmentsDownloaded = 0;
+
+    if (urlTemplate && !isNaN(startNumber) && !isNaN(endNumber)) {
+      for (let i = startNumber; i <= endNumber; i++) {
+        const paddedNumber = i.toString().padStart(minPlaces, "0");
+        const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
+
+        loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
+        const response = await fetch(segmentUrl);
+        if (!response.ok) {
+          continue;
+        }
+
+        const buf = await response.arrayBuffer();
+        arrayBuffers.push(buf);
+        segmentsDownloaded++;
+
+        globalDownloads[uniqueDownloadId].progress = segmentsDownloaded;
+        updateGlobalDownloadsUI(false);
+      }
+    } else if (urlTemplate && !isNaN(startNumber)) {
+      let i = startNumber;
+      while (true) {
+        const paddedNumber = i.toString().padStart(minPlaces, "0");
+        const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
+
+        loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
+        const response = await fetch(segmentUrl);
+        if (!response.ok) {
+          break;
+        }
+
+        const buf = await response.arrayBuffer();
+        arrayBuffers.push(buf);
+        segmentsDownloaded++;
+
+        // indefinite totalSegments
+        globalDownloads[uniqueDownloadId].progress = segmentsDownloaded;
+        updateGlobalDownloadsUI(false);
+
+        i++;
+      }
+    } else {
+      let segmentNumber = 1;
+      while (true) {
+        const segmentUrl = replaceMultiPartNumber(
+          url,
+          multiReplace,
+          segmentNumber
+        );
+        loadingIndicator.textContent = `Downloading segment ${segmentNumber}...`;
+        const response = await fetch(segmentUrl);
+        if (!response.ok) {
+          break;
+        }
+        const buf = await response.arrayBuffer();
+        arrayBuffers.push(buf);
+        segmentsDownloaded++;
+
+        // indefinite totalSegments
+        globalDownloads[uniqueDownloadId].progress = segmentsDownloaded;
+        updateGlobalDownloadsUI(false);
+
+        segmentNumber++;
+      }
+    }
+
+    if (arrayBuffers.length === 0) {
+      console.error("No segments found for multi-part video");
+      globalDownloads[uniqueDownloadId].state = "interrupted";
+      updateGlobalDownloadsUI(false);
       return;
     }
-    const buf = await response.arrayBuffer();
-    arrayBuffers.push(buf);
-  }
 
-  if (urlTemplate && !isNaN(startNumber) && !isNaN(endNumber)) {
-    for (let i = startNumber; i <= endNumber; i++) {
-      const paddedNumber = i.toString().padStart(minPlaces, "0");
+    const totalLength = arrayBuffers.reduce(
+      (acc, buf) => acc + buf.byteLength,
+      0
+    );
+    const combined = new Uint8Array(totalLength);
 
-      const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
-
-      loadingIndicator.textContent = `Downloading segment ${paddedNumber}... (leaving tab will continue download, but you won't see progress)`;
-
-      const response = await fetch(segmentUrl);
-      if (!response.ok) {
-        // Go to next number
-        continue;
-      }
-
-      const buf = await response.arrayBuffer();
-      arrayBuffers.push(buf);
+    let offset = 0;
+    for (const buffer of arrayBuffers) {
+      combined.set(new Uint8Array(buffer), offset);
+      offset += buffer.byteLength;
     }
-  } else if (urlTemplate && !isNaN(startNumber)) {
-    let i = startNumber;
 
-    while (true) {
-      const paddedNumber = i.toString().padStart(minPlaces, "0");
+    const finalBlob = new Blob([combined], { type: "video/mp4" });
+    let filename = `${tabTitle}.mp4` || "combined_video.mp4";
+    filename = cleanURL(filename, true);
+    let extension = "mp4";
 
-      const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
+    let filenameOverride = getVideoFilenameOverride() || null;
+    let foldernameOverride = getVideoFoldernameOverride() || null;
 
-      loadingIndicator.textContent = `Downloading segment ${paddedNumber}... (leaving tab will continue download, but you won't see progress)`;
-
-      const response = await fetch(segmentUrl);
-      if (!response.ok) {
-        // Go to next number
-        break;
-      }
-
-      const buf = await response.arrayBuffer();
-      arrayBuffers.push(buf);
-      i++;
+    if (filenameOverride) {
+      filenameOverride += `.${extension}`;
     }
-  } else {
-    let segmentNumber = 1;
 
-    while (true) {
-      const segmentUrl = replaceMultiPartNumber(
-        url,
-        multiReplace,
-        segmentNumber
-      );
+    const folderName = foldernameOverride || "videos";
+    let downloadPath;
 
-      loadingIndicator.textContent = `Downloading segment ${segmentNumber}... (leaving tab will continue download, but you won't see progress)`;
-
-      const response = await fetch(segmentUrl);
-      if (!response.ok) {
-        // No more segments available
-        break;
-      }
-      const buf = await response.arrayBuffer();
-      arrayBuffers.push(buf);
-      segmentNumber++;
+    if (filenameOverride) {
+      downloadPath = `${folderName}/${filenameOverride}`;
+    } else {
+      downloadPath = `${folderName}/${filename}`;
     }
-  }
 
-  if (arrayBuffers.length === 0) {
-    console.error("No segments found for multi-part video");
-    return;
-  }
-
-  const totalLength = arrayBuffers.reduce(
-    (acc, buf) => acc + buf.byteLength,
-    0
-  );
-  const combined = new Uint8Array(totalLength);
-
-  let offset = 0;
-  for (const buffer of arrayBuffers) {
-    combined.set(new Uint8Array(buffer), offset);
-    offset += buffer.byteLength;
-  }
-
-  const finalBlob = new Blob([combined], { type: "video/mp4" });
-  let filename = `${tabTitle}.mp4` || "combined_video.mp4";
-  filename = cleanURL(filename, true);
-  let extension = "mp4";
-
-  let filenameOverride = getVideoFilenameOverride() || null;
-  let foldernameOverride = getVideoFoldernameOverride() || null;
-
-  if (filenameOverride) {
-    filenameOverride += `.${extension}`;
-  }
-
-  const folderName = foldernameOverride || "videos";
-  let downloadPath;
-
-  if (filenameOverride) {
-    downloadPath = `${folderName}/${filenameOverride}`;
-  } else {
-    downloadPath = `${folderName}/${filename}`;
-  }
-
-  // Initiate the download using the combined Blob
-  const objectUrl = URL.createObjectURL(finalBlob);
-  (browser.downloads || chrome.downloads).download(
-    {
-      url: objectUrl,
-      filename: downloadPath,
-      conflictAction: "uniquify",
-    },
-    (downloadId) => {
-      if (chrome.runtime && chrome.runtime.lastError) {
-        console.error("Download failed: ", chrome.runtime.lastError.message);
+    const objectUrl = URL.createObjectURL(finalBlob);
+    (browser.downloads || chrome.downloads).download(
+      {
+        url: objectUrl,
+        filename: downloadPath,
+        conflictAction: "uniquify",
+      },
+      (downloadId) => {
+        if (chrome.runtime && chrome.runtime.lastError) {
+          console.error("Download failed: ", chrome.runtime.lastError.message);
+        }
+        setTimeout(() => {
+          URL.revokeObjectURL(objectUrl);
+        }, 10000);
       }
-      // Revoke the object URL after some time to free up memory
-      setTimeout(() => {
-        URL.revokeObjectURL(objectUrl);
-      }, 10000);
-    }
-  );
+    );
+
+    // Mark global download complete
+    globalDownloads[uniqueDownloadId].progress = 100;
+    globalDownloads[uniqueDownloadId].state = "complete";
+    updateGlobalDownloadsUI(false);
+  } catch (err) {
+    console.error("Error in multi-part download: ", err);
+    globalDownloads[uniqueDownloadId].state = "interrupted";
+    updateGlobalDownloadsUI(false);
+  }
 }
 
-// every time the tab changes to a new tab, update the UI
+// Update the UI whenever tab changes
 chrome.tabs.onActivated.addListener((activeInfo) => {
   updateVideoUI();
 });
@@ -896,28 +898,22 @@ function getVideoFilenameOverride() {
 
 // Utility function to clean URL for filename
 function cleanURL(url, replaceSpaces = false) {
-  let cleaned = url.replace(/[<>:"/\\|?*]+/g, ""); // Remove illegal filename characters
+  let cleaned = url.replace(/[<>:"/\\|?*]+/g, "");
   if (replaceSpaces) {
-    cleaned = cleaned.replace(/\s+/g, "_"); // Replace spaces with underscores
+    cleaned = cleaned.replace(/\s+/g, "_");
   }
   return cleaned;
 }
 
-// Function to log download info every second
+// Function to log download info every second (still shows individual progress labels)
 function logDownloadInfo() {
+  // in_progress
   const downloadQuery = { state: "in_progress" };
   browser.downloads.search(downloadQuery).then((downloads) => {
     downloads.forEach((downloadItem) => {
       const url = downloadItem.url;
       const key = url.split("?")[0];
       const loadingIndicator = document.getElementById(`video-loading-${key}`);
-
-      // console.log('in progress', {
-      //   downloadItem,
-      //   url,
-      //   key,
-      //   loadingIndicator
-      // });
 
       if (loadingIndicator) {
         const currentMB = downloadItem.bytesReceived / 1024 / 1024;
@@ -958,7 +954,44 @@ function logDownloadInfo() {
       }
     });
   });
+
+  // Always keep the global downloads UI updated
+  updateGlobalDownloadsUI();
 }
 
 // Set an interval to run the function every second
 setInterval(logDownloadInfo, 1000);
+
+// New function to hide/show a global downloads area and list the active downloads
+function updateGlobalDownloadsUI(showPercents = true) {
+  const container = document.getElementById("global-downloads");
+  if (!container) return;
+
+  // Check if there's at least one 'in_progress' download
+  const hasActiveDownloads = Object.values(globalDownloads).some(
+    (dl) => dl.state === "in_progress"
+  );
+
+  const listContainer = document.getElementById("global-downloads-list");
+  if (!listContainer) return;
+  listContainer.innerHTML = "";
+
+  // Render info for all tracked downloads, newest first
+  Object.entries(globalDownloads)
+    .sort((a, b) => b[0].localeCompare(a[0])) // Sort by downloadId in descending order
+    .forEach(([downloadId, data]) => {
+      const itemDiv = document.createElement("div");
+
+      if (showPercents) {
+        itemDiv.textContent = `ID #${downloadId} | State: ${
+          data.state
+        } | Progress: ${data.progress || 0}%`;
+      } else {
+        itemDiv.textContent = `ID #${downloadId} | State: ${
+          data.state
+        } | Progress: ${data.progress || 0} segments`;
+      }
+
+      listContainer.appendChild(itemDiv);
+    });
+}
