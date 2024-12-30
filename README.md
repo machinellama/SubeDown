@@ -39,6 +39,11 @@ Github: https://github.com/machinellama/SubeDown
   - If video progress disappears:
     - Don't worry! Progress may disappear if you change tabs or close the sidebar, but the download is still happening in the background
     - As long as you don't close your browser window, the download should appear in your download folder after a few minutes
+  - .ts file only downloads 10 or so segments:
+    - Typically the format for will something like /ep.1.123.10801.ts, where the 1080 represents the quality (could be 480, 720, etc.) and the number right after it (the 01 in this case) is the segment number.
+    - If you start the download when the number if above 10, it may cause an issue
+    - Try clicking the "advanced" button for that video item, copy the url, replace the last number after the quality with {{number}}, start at 1, leave the end empty, and start the download again
+    - Also try clearing the list, closing and reopening the sidebar, refreshing the page, and manually starting the video to make sure it starts
 
 ## Screenshots
 
