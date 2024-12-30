@@ -130,12 +130,12 @@ function generateVideoKey(request) {
 function addOrUpdateVideo(request) {
   const videoKey = generateVideoKey(request);
 
-  console.log("addOrUpdateVideo", request.url, {
-    request,
-    videoKey,
-    isVideoRequest: isVideoRequest(request),
-    existing: videoNetworkList[request.tabId]?.[videoKey],
-  });
+  // console.log("addOrUpdateVideo", request.url, {
+  //   request,
+  //   videoKey,
+  //   isVideoRequest: isVideoRequest(request),
+  //   existing: videoNetworkList[request.tabId]?.[videoKey],
+  // });
 
   if (isVideoRequest(request)) {
     if (!videoNetworkList[request.tabId]) {
@@ -716,8 +716,6 @@ async function downloadFullMultipartVideo(
   const url = video.url;
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
-
-  console.log({ video });
 
   // Create a unique ID for this multi-part download
   const uniqueDownloadId = `multipart-${video.tabTitle}-${Date.now()}`;
