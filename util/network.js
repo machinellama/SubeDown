@@ -3,6 +3,7 @@
 // Global data structures
 const videoNetworkList = {};
 let globalDownloads = {}; // tracks all downloads (single, multi-part, m3u8, etc.)
+const DEFAULT_SEGMENT_LIMIT = 500;
 
 // Constants
 const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
@@ -214,179 +215,187 @@ function updateVideoUI() {
       })
       .sort((a, b) => current[b].timeStamp - current[a].timeStamp);
 
+    // check for and remove duplicate video.url entries in orderedKeysByTimestamp
+    const seenUrls = [];
+
     for (const key of orderedKeysByTimestamp) {
       const video = current[key];
       if (!video || !video.url) {
         continue;
       }
 
-      const videoDiv = document.createElement("div");
-      videoDiv.classList.add("video-entry");
-      videoDiv.id = `video-${key}`;
-      videoDiv.name = video.url;
-      videoDiv.key = key;
+      if (!seenUrls.includes(video.url)) {
+        seenUrls.push(video.url);
 
-      const urlWithoutQuery = video.url.split("?")[0];
-      const tabTitle = video.tabTitle;
+        const videoDiv = document.createElement("div");
+        videoDiv.classList.add("video-entry");
+        videoDiv.id = `video-${key}`;
+        videoDiv.name = video.url;
+        videoDiv.key = key;
 
-      const titleDiv = document.createElement("div");
-      titleDiv.classList.add("video-title");
-      titleDiv.textContent = tabTitle;
-      videoDiv.appendChild(titleDiv);
+        const urlWithoutQuery = video.url.split("?")[0];
+        const tabTitle = video.tabTitle;
 
-      const urlDiv = document.createElement("div");
-      urlDiv.classList.add("video-url");
-      urlDiv.textContent = urlWithoutQuery;
-      videoDiv.appendChild(urlDiv);
+        const titleDiv = document.createElement("div");
+        titleDiv.classList.add("video-title");
+        titleDiv.textContent = tabTitle;
+        videoDiv.appendChild(titleDiv);
 
-      let videoAdvancedSection;
-      let replaceInput;
-      let startNumberInput;
-      let endNumberInput;
-      let minPlacesInput;
+        const urlDiv = document.createElement("div");
+        urlDiv.classList.add("video-url");
+        urlDiv.textContent = urlWithoutQuery;
+        videoDiv.appendChild(urlDiv);
 
-      if (video.isMultipart || video.isM3U8) {
-        videoAdvancedSection = document.createElement("div");
-        videoAdvancedSection.id = `video-advanced-${key}`;
-        videoAdvancedSection.style.display = "none";
-        videoAdvancedSection.style.marginBottom = "10px";
-        videoDiv.appendChild(videoAdvancedSection);
-
-        const advancedTitle = document.createElement("div");
-        advancedTitle.classList.add("video-advanced-title");
-        advancedTitle.textContent = video.isM3U8
-          ? "M3U8 Playlist Settings"
-          : "Multi-part Segment URL Template";
-        videoAdvancedSection.appendChild(advancedTitle);
-
-        if (!video.isM3U8) {
-          // Only show multipart inputs if not m3u8
-          replaceInput = document.createElement("input");
-          replaceInput.id = "multi-part-replace";
-          replaceInput.type = "text";
-          replaceInput.placeholder = "e.g. seg-{{number}}";
-          videoAdvancedSection.appendChild(replaceInput);
-
-          startNumberInput = document.createElement("input");
-          startNumberInput.id = "multi-part-start-number";
-          startNumberInput.type = "number";
-          startNumberInput.placeholder = "Start Number";
-          videoAdvancedSection.appendChild(startNumberInput);
-
-          endNumberInput = document.createElement("input");
-          endNumberInput.id = "multi-part-end-number";
-          endNumberInput.type = "number";
-          endNumberInput.placeholder = "End Number";
-          videoAdvancedSection.appendChild(endNumberInput);
-
-          minPlacesInput = document.createElement("input");
-          minPlacesInput.id = "multi-part-min-places";
-          minPlacesInput.type = "number";
-          minPlacesInput.placeholder = "e.g. 3 = 001";
-          minPlacesInput.min = "0";
-          minPlacesInput.step = "1";
-          videoAdvancedSection.appendChild(minPlacesInput);
-        } else {
-          // For m3u8, could add specific settings if needed
-        }
-      }
-
-      const buttonsDiv = document.createElement("div");
-      buttonsDiv.classList.add("video-buttons");
-      videoDiv.appendChild(buttonsDiv);
-
-      const downloadBtn = document.createElement("button");
-      downloadBtn.classList.add("download-btn");
-      downloadBtn.textContent = "Download";
-      buttonsDiv.appendChild(downloadBtn);
-
-      const copyBtn = document.createElement("button");
-      copyBtn.classList.add("copy-btn");
-      copyBtn.textContent = "Copy URL";
-      buttonsDiv.appendChild(copyBtn);
-
-      copyBtn.addEventListener("click", () => {
-        navigator.clipboard.writeText(video.url).then(
-          () => {},
-          (err) => {}
-        );
-      });
-
-      let videoAdvancedBtn;
-      if (video.isMultipart || video.isM3U8) {
-        videoAdvancedBtn = document.createElement("button");
-        videoAdvancedBtn.classList.add("copy-btn");
-        videoAdvancedBtn.textContent = "Advanced";
-        buttonsDiv.appendChild(videoAdvancedBtn);
-
-        videoAdvancedBtn.addEventListener("click", () => {
-          videoAdvancedSection.style.display = "block";
-        });
-      }
-
-      const loadingIndicator = document.createElement("div");
-      const keyWithoutFirstPart = key.split(":").slice(1).join(":");
-      loadingIndicator.id = `video-loading-${keyWithoutFirstPart}`;
-      loadingIndicator.classList.add("loading-indicator");
-      loadingIndicator.textContent = "Starting Download...";
-      loadingIndicator.style.display = "none";
-      videoDiv.appendChild(loadingIndicator);
-
-      downloadBtn.addEventListener("click", async () => {
-        loadingIndicator.style.display = "block";
-        downloadBtn.style.display = "none";
-        copyBtn.style.display = "none";
+        let videoAdvancedSection;
+        let replaceInput;
+        let startNumberInput;
+        let endNumberInput;
+        let minPlacesInput;
 
         if (video.isMultipart || video.isM3U8) {
-          if (videoAdvancedBtn) {
-            videoAdvancedBtn.style.display = "none";
-          }
-          if (videoAdvancedSection) {
-            videoAdvancedSection.style.display = "none";
+          videoAdvancedSection = document.createElement("div");
+          videoAdvancedSection.id = `video-advanced-${key}`;
+          videoAdvancedSection.style.display = "none";
+          videoAdvancedSection.style.marginBottom = "10px";
+          videoDiv.appendChild(videoAdvancedSection);
+
+          const advancedTitle = document.createElement("div");
+          advancedTitle.classList.add("video-advanced-title");
+          advancedTitle.textContent = video.isM3U8
+            ? "M3U8 Playlist Settings"
+            : "Multi-part Segment URL Template";
+          videoAdvancedSection.appendChild(advancedTitle);
+
+          if (!video.isM3U8) {
+            // Only show multipart inputs if not m3u8
+            replaceInput = document.createElement("input");
+            replaceInput.id = "multi-part-replace";
+            replaceInput.type = "text";
+            replaceInput.placeholder = "e.g. test.com/ep.1.1080{{number}}";
+            videoAdvancedSection.appendChild(replaceInput);
+
+            startNumberInput = document.createElement("input");
+            startNumberInput.id = "multi-part-start-number";
+            startNumberInput.type = "number";
+            startNumberInput.placeholder = "Start Number";
+            videoAdvancedSection.appendChild(startNumberInput);
+
+            endNumberInput = document.createElement("input");
+            endNumberInput.id = "multi-part-end-number";
+            endNumberInput.type = "number";
+            endNumberInput.placeholder = "End Number";
+            videoAdvancedSection.appendChild(endNumberInput);
+
+            minPlacesInput = document.createElement("input");
+            minPlacesInput.id = "multi-part-min-places";
+            minPlacesInput.type = "number";
+            minPlacesInput.placeholder = "e.g. 3 = 001";
+            minPlacesInput.min = "0";
+            minPlacesInput.step = "1";
+            videoAdvancedSection.appendChild(minPlacesInput);
+          } else {
+            // For m3u8, could add specific settings if needed
           }
         }
 
-        try {
-          current.loadingIndicator = loadingIndicator;
-          if (video.isM3U8) {
-            await downloadM3U8Video(video, tabTitle, current);
-          } else if (video.isMultipart) {
-            await downloadFullMultipartVideo(video, tabTitle, current, {
-              replace: replaceInput ? replaceInput.value : "",
-              startNumber: startNumberInput ? startNumberInput.value : "",
-              endNumber: endNumberInput ? endNumberInput.value : "",
-              minPlaces: minPlacesInput ? minPlacesInput.value : "",
-            });
-          } else {
-            await downloadVideo(video.url, tabTitle, current);
-          }
-        } catch (err) {
-          console.error("Download failed: ", err);
-        } finally {
-          loadingIndicator.style.display = "none";
-          downloadBtn.style.display = "block";
-          copyBtn.style.display = "block";
+        const buttonsDiv = document.createElement("div");
+        buttonsDiv.classList.add("video-buttons");
+        videoDiv.appendChild(buttonsDiv);
+
+        const downloadBtn = document.createElement("button");
+        downloadBtn.classList.add("download-btn");
+        downloadBtn.textContent = "Download";
+        buttonsDiv.appendChild(downloadBtn);
+
+        const copyBtn = document.createElement("button");
+        copyBtn.classList.add("copy-btn");
+        copyBtn.textContent = "Copy URL";
+        buttonsDiv.appendChild(copyBtn);
+
+        copyBtn.addEventListener("click", () => {
+          navigator.clipboard.writeText(video.url).then(
+            () => {},
+            (err) => {}
+          );
+        });
+
+        let videoAdvancedBtn;
+        if (video.isMultipart || video.isM3U8) {
+          videoAdvancedBtn = document.createElement("button");
+          videoAdvancedBtn.classList.add("copy-btn");
+          videoAdvancedBtn.textContent = "Advanced";
+          buttonsDiv.appendChild(videoAdvancedBtn);
+
+          videoAdvancedBtn.addEventListener("click", () => {
+            videoAdvancedSection.style.display = "block";
+          });
+        }
+
+        const loadingIndicator = document.createElement("div");
+        const keyWithoutFirstPart = key.split(":").slice(1).join(":");
+        loadingIndicator.id = `video-loading-${keyWithoutFirstPart}`;
+        loadingIndicator.classList.add("loading-indicator");
+        loadingIndicator.textContent = "Starting Download...";
+        loadingIndicator.style.display = "none";
+        videoDiv.appendChild(loadingIndicator);
+
+        downloadBtn.addEventListener("click", async () => {
+          loadingIndicator.style.display = "block";
+          downloadBtn.style.display = "none";
+          copyBtn.style.display = "none";
 
           if (video.isMultipart || video.isM3U8) {
             if (videoAdvancedBtn) {
-              videoAdvancedBtn.style.display = "block";
+              videoAdvancedBtn.style.display = "none";
             }
-            if (videoAdvancedSection && !video.isM3U8) {
+            if (videoAdvancedSection) {
               videoAdvancedSection.style.display = "none";
             }
           }
-        }
-      });
 
-      const videoClearBtn = document.getElementById("videos-advanced-clear");
-      if (videoClearBtn) {
-        videoClearBtn.addEventListener("click", () => {
-          videoNetworkList[currentTabId] = {};
-          updateVideoUI();
+          try {
+            current.loadingIndicator = loadingIndicator;
+            if (video.isM3U8) {
+              await downloadM3U8Video(video, tabTitle, current);
+            } else if (video.isMultipart) {
+              await downloadFullMultipartVideo(video, tabTitle, current, {
+                replace: replaceInput ? replaceInput.value : "",
+                startNumber: startNumberInput ? startNumberInput.value : "",
+                endNumber: endNumberInput ? endNumberInput.value : "",
+                minPlaces: minPlacesInput ? minPlacesInput.value : "",
+              });
+            } else {
+              await downloadVideo(video.url, tabTitle, current);
+            }
+          } catch (err) {
+            console.error("Download failed: ", err);
+          } finally {
+            loadingIndicator.style.display = "none";
+            downloadBtn.style.display = "block";
+            copyBtn.style.display = "block";
+
+            if (video.isMultipart || video.isM3U8) {
+              if (videoAdvancedBtn) {
+                videoAdvancedBtn.style.display = "block";
+              }
+              if (videoAdvancedSection && !video.isM3U8) {
+                videoAdvancedSection.style.display = "none";
+              }
+            }
+          }
         });
-      }
 
-      videosSection.appendChild(videoDiv);
+        const videoClearBtn = document.getElementById("videos-advanced-clear");
+        if (videoClearBtn) {
+          videoClearBtn.addEventListener("click", () => {
+            videoNetworkList[currentTabId] = {};
+            globalDownloads = {};
+            updateVideoUI();
+          });
+        }
+
+        videosSection.appendChild(videoDiv);
+      }
     }
   });
 }
@@ -464,6 +473,7 @@ async function downloadM3U8Video(video, tabTitle, current) {
     url,
     progress: 0,
     state: "in_progress",
+    type: "m3u8",
   };
   updateGlobalDownloadsUI();
 
@@ -486,7 +496,9 @@ async function downloadM3U8Video(video, tabTitle, current) {
       return;
     }
 
-    const MAX_SEGMENTS_PER_PART = 500;
+    const MAX_SEGMENTS_PER_PART = (document.getElementById(
+      "video-segment-limit"
+    ).textContent = imagesData.length || DEFAULT_SEGMENT_LIMIT);
     const totalParts = Math.ceil(segmentUrls.length / MAX_SEGMENTS_PER_PART);
     const totalSegments = segmentUrls.length;
     let segmentsDownloaded = 0;
@@ -713,8 +725,9 @@ async function downloadFullMultipartVideo(
     url,
     progress: 0,
     state: "in_progress",
+    type: "multipart",
   };
-  updateGlobalDownloadsUI(false);
+  updateGlobalDownloadsUI();
 
   try {
     const arrayBuffers = [];
@@ -733,7 +746,7 @@ async function downloadFullMultipartVideo(
       if (!response.ok) {
         console.error("Failed to fetch initial segment: ", response.statusText);
         globalDownloads[uniqueDownloadId].state = "interrupted";
-        updateGlobalDownloadsUI(false);
+        updateGlobalDownloadsUI();
         return;
       }
       const buf = await response.arrayBuffer();
@@ -758,7 +771,7 @@ async function downloadFullMultipartVideo(
         segmentsDownloaded++;
 
         globalDownloads[uniqueDownloadId].progress = segmentsDownloaded;
-        updateGlobalDownloadsUI(false);
+        updateGlobalDownloadsUI();
       }
     } else if (urlTemplate && !isNaN(startNumber)) {
       let i = startNumber;
@@ -778,7 +791,7 @@ async function downloadFullMultipartVideo(
 
         // indefinite totalSegments
         globalDownloads[uniqueDownloadId].progress = segmentsDownloaded;
-        updateGlobalDownloadsUI(false);
+        updateGlobalDownloadsUI();
 
         i++;
       }
@@ -801,7 +814,7 @@ async function downloadFullMultipartVideo(
 
         // indefinite totalSegments
         globalDownloads[uniqueDownloadId].progress = segmentsDownloaded;
-        updateGlobalDownloadsUI(false);
+        updateGlobalDownloadsUI();
 
         segmentNumber++;
       }
@@ -810,7 +823,7 @@ async function downloadFullMultipartVideo(
     if (arrayBuffers.length === 0) {
       console.error("No segments found for multi-part video");
       globalDownloads[uniqueDownloadId].state = "interrupted";
-      updateGlobalDownloadsUI(false);
+      updateGlobalDownloadsUI();
       return;
     }
 
@@ -867,11 +880,11 @@ async function downloadFullMultipartVideo(
     // Mark global download complete
     globalDownloads[uniqueDownloadId].progress = 100;
     globalDownloads[uniqueDownloadId].state = "complete";
-    updateGlobalDownloadsUI(false);
+    updateGlobalDownloadsUI();
   } catch (err) {
     console.error("Error in multi-part download: ", err);
     globalDownloads[uniqueDownloadId].state = "interrupted";
-    updateGlobalDownloadsUI(false);
+    updateGlobalDownloadsUI();
   }
 }
 
@@ -963,14 +976,9 @@ function logDownloadInfo() {
 setInterval(logDownloadInfo, 1000);
 
 // New function to hide/show a global downloads area and list the active downloads
-function updateGlobalDownloadsUI(showPercents = true) {
+function updateGlobalDownloadsUI() {
   const container = document.getElementById("global-downloads");
   if (!container) return;
-
-  // Check if there's at least one 'in_progress' download
-  const hasActiveDownloads = Object.values(globalDownloads).some(
-    (dl) => dl.state === "in_progress"
-  );
 
   const listContainer = document.getElementById("global-downloads-list");
   if (!listContainer) return;
@@ -981,16 +989,25 @@ function updateGlobalDownloadsUI(showPercents = true) {
     .sort((a, b) => b[0].localeCompare(a[0])) // Sort by downloadId in descending order
     .forEach(([downloadId, data]) => {
       const itemDiv = document.createElement("div");
+      const showPercents = data.type !== "m3u8" && data.type !== "multipart";
 
-      if (showPercents) {
-        itemDiv.textContent = `ID #${downloadId} | State: ${
-          data.state
-        } | Progress: ${data.progress || 0}%`;
+      if (data.state === "complete") {
+        itemDiv.textContent = `ID #${downloadId} | Completed!`;
       } else {
-        itemDiv.textContent = `ID #${downloadId} | State: ${
-          data.state
-        } | Progress: ${data.progress || 0} segments`;
+        if (showPercents) {
+          itemDiv.textContent = `ID #${downloadId} | State: ${
+            data.state
+          } | Progress: ${data.progress || 0}%`;
+        } else {
+          itemDiv.textContent = `ID #${downloadId} | State: ${
+            data.state
+          } | Progress: ${data.progress || 0} segments`;
+        }
       }
+
+      itemDiv.style.borderBottom = "1px solid #ccc";
+      itemDiv.style.paddingTop = "2px";
+      itemDiv.style.paddingBottom = "2px";
 
       listContainer.appendChild(itemDiv);
     });
