@@ -918,6 +918,10 @@ function cleanURL(url, replaceSpaces = false) {
 
 // Function to log download info every second (still shows individual progress labels)
 function logDownloadInfo() {
+  if (!globalDownloads) {
+    globalDownloads = {};
+  }
+
   // in_progress
   const downloadQuery = { state: "in_progress" };
   browser.downloads.search(downloadQuery).then((downloads) => {
@@ -926,15 +930,23 @@ function logDownloadInfo() {
       const key = url.split("?")[0];
       const loadingIndicator = document.getElementById(`video-loading-${key}`);
 
+      const currentMB = downloadItem.bytesReceived / 1024 / 1024;
+      const totalMB = downloadItem.totalBytes / 1024 / 1024;
+      const progress = Math.round((currentMB / totalMB) * 100);
+
       if (loadingIndicator) {
-        const currentMB = downloadItem.bytesReceived / 1024 / 1024;
-        const totalMB = downloadItem.totalBytes / 1024 / 1024;
-        const progress = Math.round((currentMB / totalMB) * 100);
         loadingIndicator.style.display = "block";
         loadingIndicator.textContent = `Downloading... ${progress}% (${currentMB.toFixed(
           2
         )} MB / ${totalMB.toFixed(2)} MB)`;
       }
+
+      globalDownloads[key] = {
+        url,
+        progress,
+        state: "in_progress",
+        type: "single",
+      };
     });
   });
 
@@ -949,6 +961,8 @@ function logDownloadInfo() {
         loadingIndicator.style.display = "block";
         loadingIndicator.textContent = "Download complete!";
       }
+
+      delete globalDownloads[key];
     });
   });
 
@@ -963,6 +977,13 @@ function logDownloadInfo() {
         loadingIndicator.style.display = "block";
         loadingIndicator.textContent = "Download interrupted";
       }
+
+      globalDownloads[key] = {
+        url,
+        progress: 0,
+        state: "interrupted",
+        type: "single",
+      };
     });
   });
 
