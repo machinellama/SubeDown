@@ -496,9 +496,9 @@ async function downloadM3U8Video(video, tabTitle, current) {
       return;
     }
 
-    const MAX_SEGMENTS_PER_PART = (document.getElementById(
-      "video-segment-limit"
-    ).textContent = imagesData.length || DEFAULT_SEGMENT_LIMIT);
+    const videoSegmentLimit = parseFloat(document.getElementById("video-segment-limit").value)
+    const MAX_SEGMENTS_PER_PART = videoSegmentLimit || DEFAULT_SEGMENT_LIMIT;
+
     const totalParts = Math.ceil(segmentUrls.length / MAX_SEGMENTS_PER_PART);
     const totalSegments = segmentUrls.length;
     let segmentsDownloaded = 0;
