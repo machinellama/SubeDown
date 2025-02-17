@@ -10,6 +10,7 @@ const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
 const MULTIPART_INDICATORS = [
   "chunk-",
   "segment-",
+  "segment_",
   "part-",
   "seg-",
   "ep.",
@@ -43,6 +44,8 @@ const validTypes = ["stream-1", "cdn3x"];
 
 // Utility function to determine if a request is a video
 function isVideoRequest(request) {
+  // console.log('isVideoRequest', request);
+
   if (!request.url) {
     return false;
   }
@@ -496,7 +499,9 @@ async function downloadM3U8Video(video, tabTitle, current) {
       return;
     }
 
-    const videoSegmentLimit = parseFloat(document.getElementById("video-segment-limit").value)
+    const videoSegmentLimit = parseFloat(
+      document.getElementById("video-segment-limit").value
+    );
     const MAX_SEGMENTS_PER_PART = videoSegmentLimit || DEFAULT_SEGMENT_LIMIT;
 
     const totalParts = Math.ceil(segmentUrls.length / MAX_SEGMENTS_PER_PART);
@@ -717,6 +722,8 @@ async function downloadFullMultipartVideo(
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
 
+  // console.log('start downloadFullMultipartVideo', { video, tabTitle, current, options, url, multiReplace, loadingIndicator });
+
   // Create a unique ID for this multi-part download
   const uniqueDownloadId = `multipart-${video.tabTitle}-${Date.now()}`;
   globalDownloads[uniqueDownloadId] = {
@@ -729,18 +736,31 @@ async function downloadFullMultipartVideo(
 
   try {
     const arrayBuffers = [];
+    const audioBuffers = [];
 
     const urlTemplate = options.replace?.trim();
     const startNumber = parseInt(options.startNumber, 10);
     const endNumber = parseInt(options.endNumber, 10);
     const minPlaces = parseInt(options.minPlaces, 10);
 
-    if (url.includes("seg-") && url.includes(".m4s")) {
-      const regex = new RegExp(`seg-(\\d+)`);
+    if (
+      (url.includes("seg-") || url.includes("segment_")) &&
+      url.includes(".m4s")
+    ) {
+      let regex;
+      if (url.includes("seg-")) {
+        regex = new RegExp(`seg-(\\d+)`);
+      } else {
+        regex = new RegExp(`segment_(\\d+)`);
+      }
+
       let initURL = url.replace(regex, `init`);
       initURL = initURL.replace(".m4s", ".mp4");
 
       const response = await fetch(initURL);
+
+      // console.log({ initURL, response });
+
       if (!response.ok) {
         console.error("Failed to fetch initial segment: ", response.statusText);
         globalDownloads[uniqueDownloadId].state = "interrupted";
@@ -795,19 +815,37 @@ async function downloadFullMultipartVideo(
       }
     } else {
       let segmentNumber = 1;
+
+      if (url.includes('segment_')) {
+        segmentNumber = 0;
+      }
+
       while (true) {
         const segmentUrl = replaceMultiPartNumber(
           url,
           multiReplace,
           segmentNumber
         );
+        // console.log({ segmentUrl });
         loadingIndicator.textContent = `Downloading segment ${segmentNumber}...`;
+
+        if (segmentUrl.includes('/video/1080p/dash')) {
+          const audioURL = segmentUrl.replace('/video/1080p/dash/', '/audio/eng/dash/128000/');
+          const response = await fetch(audioURL);
+          if (!response.ok) {
+            break;
+          }
+          const buf = await response.arrayBuffer();
+          arrayBuffers.push(buf);
+        }
+
         const response = await fetch(segmentUrl);
         if (!response.ok) {
           break;
         }
         const buf = await response.arrayBuffer();
         arrayBuffers.push(buf);
+
         segmentsDownloaded++;
 
         // indefinite totalSegments
