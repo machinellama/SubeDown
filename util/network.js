@@ -40,7 +40,7 @@ const invalidTypes = [
   ".js",
   "/preview",
 ];
-const validTypes = ["stream-1", "cdn3x"];
+const validTypes = ["stream-1", "cdn3x", ".net/preview/"];
 
 // Utility function to determine if a request is a video
 function isVideoRequest(request) {
@@ -61,14 +61,17 @@ function isVideoRequest(request) {
       ) &&
       !url.includes(".m3u8")
     ) {
+      // console.log('isVideoRequest returning false because invalid multipart indicator', { request, url });
       return false;
     }
 
     if (validTypes.some((ext) => url.includes(ext))) {
+      // console.log('isVideoRequest returning true because validType', { validTypes, url });
       return true;
     }
 
     if (invalidTypes.some((ext) => url.includes(ext))) {
+      // console.log('isVideoRequest returning false because invalidType', { invalidTypes, url });
       return false;
     }
 
@@ -78,13 +81,16 @@ function isVideoRequest(request) {
       lastDotSplit.length <= 5 &&
       !videoExtensions.some((ext) => url.includes(ext))
     ) {
+      // console.log('isVideoRequest returning false because last dot split', { videoExtensions, lastDotSplit });
       return false;
     }
 
     if (!videoExtensions.some((ext) => url.includes(ext))) {
+      // console.log('isVideoRequest returning false because invalid videoExtensions', { videoExtensions, url });
       return false;
     }
 
+    // console.log('returning true');
     return true;
   }
 

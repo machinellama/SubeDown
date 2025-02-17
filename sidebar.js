@@ -86,7 +86,7 @@ const port = chrome.runtime.connect({ name: "sidebar" });
 
 // Listen for messages from the background script
 port.onMessage.addListener((message) => {
-  if (message.type === "network-request") {
+  if (message.type === "network-request" || message.url?.endsWith('.mp4')) {
     const req = message.data;
 
     // Only process video requests
