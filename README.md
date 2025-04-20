@@ -20,7 +20,7 @@ WARNING: While this extension was made with privacy in mind, we do not recommend
   - Download Settings:
     - Override the file name or folder name for downloads
     - Replace text in a url when downloading (multiple replaces allowed)
-      - supports using _ to replace everything after; example: replace `test=_`with`test=123&other=456`-> will replace`example.com?test=abc`with`example.com?test=123&other=456`
+      - supports using * to replace everything after; example: replace `test=*`with`test=123&other=456`-> will replace`example.com?test=abc`with`example.com?test=123&other=456`
   - Refresh Settings:
     - Filter by image types
     - Filter by image size (min and max)
@@ -50,6 +50,7 @@ WARNING: While this extension was made with privacy in mind, we do not recommend
     - If you start the download when the number if above 10, it may cause an issue
     - Try clicking the "advanced" button for that video item, copy the url, replace the last number after the quality with {{number}}, start at 1, leave the end empty, and start the download again
     - Also try clearing the list, closing and reopening the sidebar, refreshing the page, and manually starting the video to make sure it starts
+  - Download still not working? Create an Issue here on Github with details (or take a look at the code and create a PR)
 
 ## Screenshots
 
