@@ -1,12 +1,18 @@
 # SubeDown
 
-A fully open-source, privacy-focused, and free Firefox extension for downloading images and videos from web pages, including segmented videos.
+A fully open-source, privacy-focused, and free Firefox-based extension for downloading images and videos from web pages, including segmented videos.
 
 No ads, no trackers, no payments, no subscriptions, no "companion" apps, no data leaves the extension.
 
-Firefox Addon: https://addons.mozilla.org/en-US/firefox/addon/subedown/
+Addon: https://addons.mozilla.org/en-US/firefox/addon/subedown/
 
 Github: https://github.com/machinellama/SubeDown
+
+WARNING: While this extension was made with privacy in mind, we do not recommend using this with Firefox, since Mozilla is no longer privacy focused. Mozilla will track and sell any data you enter while using the Firefox browser. We recommend using this extension with alternate browsers, like LibreWolf.
+
+>Need help making your own Firefox extension? My company can help!
+>
+>Hire [dotfinally](https://dotfinally.com/en/contracting) and we can build any extension, plugin, or website that you need.
 
 ## Features
 
