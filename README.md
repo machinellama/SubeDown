@@ -68,12 +68,12 @@ MIT License: free to use for personal and commercial use
 
 2. Open Firefox and enter `about:debugging#/runtime/this-firefox` in the address bar
 
-3. Click on **This Firefox** in the sidebar
+3. Click on "**This Firefox**" in the sidebar
 
-4. Click **Load Temporary Add-on...** and select the `manifest.json` file in the cloned repository
+4. Click "**Load Temporary Add-on...**" and select the `manifest.json` file in the cloned repository
 
 5. Best experience if used in the Firefox sidebar
 
 ## Contributing
 
-Anyone is welcome to see and contribute code, or create issues.
+Anyone is welcome to contribute code or create issues.
