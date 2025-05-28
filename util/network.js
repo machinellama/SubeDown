@@ -27,6 +27,7 @@ const videoExtensions = [
   ".ts",
   ".m4s",
   ".m3u8",
+  ".mp2t",
 ];
 const invalidTypes = [
   ".mp3",
@@ -178,6 +179,8 @@ function addOrUpdateVideo(request) {
       // If URL parsing fails, just leave isMultipart and isM3U8 as false
     }
 
+    // console.log("request", request);
+
     // Update the video entry
     videoNetworkList[request.tabId][videoKey] = {
       url: request.url,
@@ -185,6 +188,8 @@ function addOrUpdateVideo(request) {
       type: request.type,
       tabId: request.tabId,
       tabTitle: request.tabTitle || null,
+      origin: request.origin,
+      referrer: request.referrer,
       parentURLName: request.parentURLName || null,
       timeStamp: request.timeStamp,
       parts: [], // Array to hold multipart segments if needed
@@ -488,7 +493,10 @@ async function downloadM3U8Video(video, tabTitle, current) {
 
   try {
     loadingIndicator.textContent = `Fetching playlist...`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      origin: video.origin ?? undefined,
+      referrer: video.origin ?? undefined,
+    });
     if (!response.ok) {
       console.error("Failed to fetch m3u8 playlist: ", response.statusText);
       globalDownloads[uniqueDownloadId].state = "interrupted";
@@ -530,7 +538,10 @@ async function downloadM3U8Video(video, tabTitle, current) {
         } of ${currentSegmentUrls.length}...`;
 
         try {
-          const segmentResponse = await fetch(segmentUrl);
+          const segmentResponse = await fetch(segmentUrl, {
+            origin: video.origin ?? undefined,
+            referrer: video.origin ?? undefined,
+          });
           if (!segmentResponse.ok) {
             console.warn(
               `Failed to fetch segment ${segmentUrl}: ${segmentResponse.statusText}`
@@ -724,9 +735,12 @@ async function downloadFullMultipartVideo(
   current,
   options = {}
 ) {
+  // console.log("video", video);
+
   const url = video.url;
   const multiReplace = video.multiReplace;
   const loadingIndicator = current.loadingIndicator;
+  const origin = video.origin;
 
   // console.log('start downloadFullMultipartVideo', { video, tabTitle, current, options, url, multiReplace, loadingIndicator });
 
@@ -763,7 +777,10 @@ async function downloadFullMultipartVideo(
       let initURL = url.replace(regex, `init`);
       initURL = initURL.replace(".m4s", ".mp4");
 
-      const response = await fetch(initURL);
+      const response = await fetch(initURL, {
+        origin: origin ?? undefined,
+        referrer: origin ?? undefined,
+      });
 
       // console.log({ initURL, response });
 
@@ -785,7 +802,10 @@ async function downloadFullMultipartVideo(
         const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
 
         loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
-        const response = await fetch(segmentUrl);
+        const response = await fetch(segmentUrl, {
+          origin: origin ?? undefined,
+          referrer: origin ?? undefined,
+        });
         if (!response.ok) {
           continue;
         }
@@ -804,7 +824,10 @@ async function downloadFullMultipartVideo(
         const segmentUrl = urlTemplate.replace("{{number}}", paddedNumber);
 
         loadingIndicator.textContent = `Downloading segment ${paddedNumber}...`;
-        const response = await fetch(segmentUrl);
+        const response = await fetch(segmentUrl, {
+          origin: origin ?? undefined,
+          referrer: origin ?? undefined,
+        });
         if (!response.ok) {
           break;
         }
@@ -822,7 +845,7 @@ async function downloadFullMultipartVideo(
     } else {
       let segmentNumber = 1;
 
-      if (url.includes('segment_')) {
+      if (url.includes("segment_")) {
         segmentNumber = 0;
       }
 
@@ -835,9 +858,15 @@ async function downloadFullMultipartVideo(
         // console.log({ segmentUrl });
         loadingIndicator.textContent = `Downloading segment ${segmentNumber}...`;
 
-        if (segmentUrl.includes('/video/1080p/dash')) {
-          const audioURL = segmentUrl.replace('/video/1080p/dash/', '/audio/eng/dash/128000/');
-          const response = await fetch(audioURL);
+        if (segmentUrl.includes("/video/1080p/dash")) {
+          const audioURL = segmentUrl.replace(
+            "/video/1080p/dash/",
+            "/audio/eng/dash/128000/"
+          );
+          const response = await fetch(audioURL, {
+            origin: origin ?? undefined,
+            referrer: origin ?? undefined,
+          });
           if (!response.ok) {
             break;
           }
@@ -845,7 +874,10 @@ async function downloadFullMultipartVideo(
           arrayBuffers.push(buf);
         }
 
-        const response = await fetch(segmentUrl);
+        const response = await fetch(segmentUrl, {
+          origin: origin ?? undefined,
+          referrer: origin ?? undefined,
+        });
         if (!response.ok) {
           break;
         }

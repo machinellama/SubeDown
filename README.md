@@ -74,6 +74,8 @@ MIT License: free to use for personal and commercial use
 
 5. Best experience if used in the sidebar
 
+6. Build new artifact with: `web-ext build --artifacts-dir=web-ext-artifacts`
+
 ## Contributing
 
 Anyone is welcome to contribute code or create issues.

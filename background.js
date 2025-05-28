@@ -15,6 +15,7 @@ chrome.runtime.onConnect.addListener((port) => {
 // Monitor network requests using webRequest API
 chrome.webRequest.onBeforeRequest.addListener(
   (details) => {
+    // console.log('details', details);
     const parentURL = details.frameAncestors?.[0]?.url || null;
     let parentURLName = "";
     if (parentURL) {
@@ -25,6 +26,17 @@ chrome.webRequest.onBeforeRequest.addListener(
           parentURLName = split[i];
           break;
         }
+      }
+    }
+
+    // Extract origin & referrer from details.originUrl, if available
+    let originDomain = null;
+    if (details.originUrl) {
+      try {
+        const urlObj = new URL(details.originUrl);
+        originDomain = `${urlObj.protocol}//${urlObj.host}`;
+      } catch (error) {
+        console.error("Invalid originUrl", details.originUrl);
       }
     }
 
@@ -45,6 +57,8 @@ chrome.webRequest.onBeforeRequest.addListener(
           tabTitle: tabTitle || null,
           tabURL: tabURL || null,
           parentURLName: parentURLName || null,
+          origin: originDomain,
+          referrer: originDomain
         };
 
         // Send the request info to the sidebar if connected
