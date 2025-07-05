@@ -41,7 +41,13 @@ const invalidTypes = [
   ".js",
   "/preview",
 ];
-const validTypes = ["stream-1", "cdn3x", ".net/preview/"];
+const validTypes = [
+  "stream-1",
+  "cdn3x",
+  ".net/preview/",
+  "webapp-prime",
+  "/aweme/",
+];
 
 // Utility function to determine if a request is a video
 function isVideoRequest(request) {
@@ -370,16 +376,16 @@ function updateVideoUI() {
           try {
             current.loadingIndicator = loadingIndicator;
             if (video.isM3U8) {
-              await downloadM3U8Video(video, tabTitle, current);
+              await downloadM3U8Video(video, current);
             } else if (video.isMultipart) {
-              await downloadFullMultipartVideo(video, tabTitle, current, {
+              await downloadFullMultipartVideo(video, current, {
                 replace: replaceInput ? replaceInput.value : "",
                 startNumber: startNumberInput ? startNumberInput.value : "",
                 endNumber: endNumberInput ? endNumberInput.value : "",
                 minPlaces: minPlacesInput ? minPlacesInput.value : "",
               });
             } else {
-              await downloadVideo(video.url, tabTitle, current);
+              await downloadVideo(video, current);
             }
           } catch (err) {
             console.error("Download failed: ", err);
@@ -414,10 +420,13 @@ function updateVideoUI() {
   });
 }
 
-async function downloadVideo(url, tabTitle, current) {
+async function downloadVideo(video, current) {
   try {
+    let filenameOverride = getVideoFilenameOverride() || null;
+    let foldernameOverride = getVideoFoldernameOverride() || null;
+
     // Perform a HEAD request to get content type and determine file extension
-    const headResponse = await fetch(url, { method: "HEAD" });
+    const headResponse = await fetch(video.url, { method: "HEAD" });
     if (!headResponse.ok) {
       console.error(
         "Failed to fetch video headers: ",
@@ -427,7 +436,17 @@ async function downloadVideo(url, tabTitle, current) {
       return;
     }
 
-    let filename = tabTitle || url.split("/").pop().split("?")[0] || "video";
+    let filename;
+    if (getUseUrlName()) {
+      filename =
+        video.parentURLName ||
+        video.url.split("/").pop().split("?")[0] ||
+        "video";
+    } else {
+      fileName =
+        video.tabTitle || video.url.split("/").pop().split("?")[0] || "video";
+    }
+
     filename = cleanURL(filename, true);
     let extension;
 
@@ -438,9 +457,6 @@ async function downloadVideo(url, tabTitle, current) {
         filename += `.${extension}`;
       }
     }
-
-    let filenameOverride = getVideoFilenameOverride() || null;
-    let foldernameOverride = getVideoFoldernameOverride() || null;
 
     if (filenameOverride) {
       filenameOverride += `.${extension}`;
@@ -458,7 +474,7 @@ async function downloadVideo(url, tabTitle, current) {
     // Initiate the download directly using the original URL
     (browser.downloads || chrome.downloads).download(
       {
-        url: url,
+        url: video.url,
         filename: downloadPath,
         conflictAction: "uniquify",
       },
@@ -477,7 +493,12 @@ async function downloadVideo(url, tabTitle, current) {
 }
 
 // New function to handle m3u8 downloads with segment splitting
-async function downloadM3U8Video(video, tabTitle, current) {
+async function downloadM3U8Video(video, current) {
+  // console.log({ video });
+
+  let filenameOverride = getVideoFilenameOverride() || null;
+  let foldernameOverride = getVideoFoldernameOverride() || null;
+
   const url = video.url;
   const loadingIndicator = current.loadingIndicator;
 
@@ -572,15 +593,17 @@ async function downloadM3U8Video(video, tabTitle, current) {
       const combinedBuffer = combineArrayBuffers(arrayBuffers);
       const finalBlob = new Blob([combinedBuffer], { type: "video/mp4" });
 
-      let filename = `${tabTitle}`;
+      let filename;
+      if (getUseUrlName()) {
+        filename = video.parentURLName;
+      } else {
+        fileName = video.tabTitle;
+      }
       if (totalParts > 1) {
         filename += `_part${part}`;
       }
       filename += `.mp4`;
       filename = cleanURL(filename, true);
-
-      let filenameOverride = getVideoFilenameOverride() || null;
-      let foldernameOverride = getVideoFoldernameOverride() || null;
 
       if (filenameOverride) {
         filenameOverride += `_${part}.mp4`;
@@ -729,13 +752,11 @@ function replaceMultiPartNumber(text, search, newNumber) {
 }
 
 // Attempt to download a multi-part video by incrementing segment numbers
-async function downloadFullMultipartVideo(
-  video,
-  tabTitle,
-  current,
-  options = {}
-) {
+async function downloadFullMultipartVideo(video, current, options = {}) {
   // console.log("video", video);
+
+  let filenameOverride = getVideoFilenameOverride() || null;
+  let foldernameOverride = getVideoFoldernameOverride() || null;
 
   const url = video.url;
   const multiReplace = video.multiReplace;
@@ -914,12 +935,16 @@ async function downloadFullMultipartVideo(
     }
 
     const finalBlob = new Blob([combined], { type: "video/mp4" });
-    let filename = `${tabTitle}.mp4` || "combined_video.mp4";
+
+    let filename;
+    if (getUseUrlName()) {
+      filename = `${video.parentURLName}.mp4` || "combined_video.mp4";
+    } else {
+      fileName = `${video.tabTitle}.mp4` || "combined_video.mp4";
+    }
+
     filename = cleanURL(filename, true);
     let extension = "mp4";
-
-    let filenameOverride = getVideoFilenameOverride() || null;
-    let foldernameOverride = getVideoFoldernameOverride() || null;
 
     if (filenameOverride) {
       filenameOverride += `.${extension}`;
@@ -981,6 +1006,13 @@ function getVideoFilenameOverride() {
   if (!overrideElement) return null;
   const override = overrideElement.value.trim();
   return override.length > 0 ? override : null;
+}
+
+// Function to get the “Use URL Name” checkbox value
+function getUseUrlName() {
+  const checkbox = document.getElementById("use-url-name");
+  if (!checkbox) return false;
+  return checkbox.checked;
 }
 
 // Utility function to clean URL for filename
