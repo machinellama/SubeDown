@@ -443,7 +443,7 @@ async function downloadVideo(video, current) {
         video.url.split("/").pop().split("?")[0] ||
         "video";
     } else {
-      fileName =
+      filename =
         video.tabTitle || video.url.split("/").pop().split("?")[0] || "video";
     }
 
@@ -597,7 +597,7 @@ async function downloadM3U8Video(video, current) {
       if (getUseUrlName()) {
         filename = video.parentURLName;
       } else {
-        fileName = video.tabTitle;
+        filename = video.tabTitle;
       }
       if (totalParts > 1) {
         filename += `_part${part}`;
@@ -940,7 +940,7 @@ async function downloadFullMultipartVideo(video, current, options = {}) {
     if (getUseUrlName()) {
       filename = `${video.parentURLName}.mp4` || "combined_video.mp4";
     } else {
-      fileName = `${video.tabTitle}.mp4` || "combined_video.mp4";
+      filename = `${video.tabTitle}.mp4` || "combined_video.mp4";
     }
 
     filename = cleanURL(filename, true);
