@@ -3,7 +3,7 @@
 // Global data structures
 const videoNetworkList = {};
 let globalDownloads = {}; // tracks all downloads (single, multi-part, m3u8, etc.)
-const DEFAULT_SEGMENT_LIMIT = 500;
+const DEFAULT_SEGMENT_LIMIT = 1000;
 
 // Constants
 const VIDEO_TYPES = ["video", "media", "xmlhttprequest"];
@@ -1139,3 +1139,24 @@ function updateGlobalDownloadsUI() {
       listContainer.appendChild(itemDiv);
     });
 }
+
+const downloadAllVideoBtn = document.getElementById(
+  "download-all-videos-button"
+);
+
+downloadAllVideoBtn.addEventListener("click", async () => {
+  // Grab the container that holds all of our video entries
+  const videosSection = document.getElementById("videos-list");
+  if (!videosSection) {
+    return;
+  }
+
+  const downloadButtons = videosSection.querySelectorAll(".download-btn");
+
+  for (const btn of downloadButtons) {
+    await new Promise((r) => {
+      btn.addEventListener("click", () => r(), { once: true });
+      btn.click();
+    });
+  }
+});
