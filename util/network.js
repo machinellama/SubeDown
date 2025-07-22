@@ -376,7 +376,7 @@ function updateVideoUI() {
           try {
             current.loadingIndicator = loadingIndicator;
             if (video.isM3U8) {
-              await downloadM3U8Video(video, current);
+              await downloadM3U8AsTS(video, current);
             } else if (video.isMultipart) {
               await downloadFullMultipartVideo(video, current, {
                 replace: replaceInput ? replaceInput.value : "",
@@ -492,19 +492,15 @@ async function downloadVideo(video, current) {
   }
 }
 
-// New function to handle m3u8 downloads with segment splitting
-async function downloadM3U8Video(video, current) {
-  // console.log({ video });
-
-  let filenameOverride = getVideoFilenameOverride() || null;
-  let foldernameOverride = getVideoFoldernameOverride() || null;
-
+// downloadM3U8AsTS: handles optional AES-128 decryption, fMP4 init maps, segment-splitting,
+// and uses a Firefox-safe fallback for blob URLs via an <a download> click.
+async function downloadM3U8AsTS(video, current) {
   const url = video.url;
   const loadingIndicator = current.loadingIndicator;
 
-  // Create a unique ID for this multi-segment download
-  const uniqueDownloadId = `m3u8-${video.tabTitle}-${Date.now()}`;
-  globalDownloads[uniqueDownloadId] = {
+  // 1) Create unique download ID & register in globalDownloads
+  const uniqueId = `m3u8-${video.tabTitle}-${Date.now()}`;
+  globalDownloads[uniqueId] = {
     url,
     progress: 0,
     state: "in_progress",
@@ -513,185 +509,227 @@ async function downloadM3U8Video(video, current) {
   updateGlobalDownloadsUI();
 
   try {
-    loadingIndicator.textContent = `Fetching playlist...`;
-    const response = await fetch(url, {
+    // 2) Fetch the playlist
+    loadingIndicator.textContent = "Fetching playlist…";
+    const resp = await fetch(url, {
       origin: video.origin ?? undefined,
       referrer: video.origin ?? undefined,
     });
-    if (!response.ok) {
-      console.error("Failed to fetch m3u8 playlist: ", response.statusText);
-      globalDownloads[uniqueDownloadId].state = "interrupted";
-      updateGlobalDownloadsUI();
-      return;
+    if (!resp.ok) {
+      throw new Error(`Playlist fetch failed: ${resp.status}`);
     }
-    const playlistText = await response.text();
+    const playlistText = await resp.text();
 
-    const segmentUrls = parseM3U8Playlist(playlistText, url);
-    if (segmentUrls.length === 0) {
-      console.error("No segments found in the m3u8 playlist.");
-      globalDownloads[uniqueDownloadId].state = "interrupted";
-      updateGlobalDownloadsUI();
-      return;
+    // 3) Extract AES-128 key URI + IV, if present
+    let keyUri = null,
+      ivHex = null;
+    for (let line of playlistText.split("\n")) {
+      if (line.startsWith("#EXT-X-KEY")) {
+        const m = /URI="([^"]+)"/.exec(line);
+        const ivm = /IV=0x([0-9A-Fa-f]+)/.exec(line);
+        if (m) keyUri = new URL(m[1], url).href;
+        if (ivm) ivHex = ivm[1];
+        break;
+      }
     }
 
-    const videoSegmentLimit = parseFloat(
+    // 4) If encrypted, fetch the raw key and import into WebCrypto
+    let cryptoKey = null,
+      ivBuf = null;
+    if (keyUri) {
+      loadingIndicator.textContent = "Fetching decryption key…";
+      const keyBuf = await (await fetch(keyUri)).arrayBuffer();
+      cryptoKey = await crypto.subtle.importKey(
+        "raw",
+        keyBuf,
+        { name: "AES-CBC" },
+        false,
+        ["decrypt"]
+      );
+      ivBuf = new Uint8Array(16);
+      for (let j = 0; j < 16; j++) {
+        ivBuf[j] = parseInt(ivHex.substr(j * 2, 2), 16);
+      }
+    }
+
+    // 5) Extract an fMP4 init-segment if EXT-X-MAP is present
+    const baseUrl = url.replace(/\/[^/]+$/, "/");
+    let initSegmentUrl = null;
+    for (let line of playlistText.split("\n")) {
+      if (line.startsWith("#EXT-X-MAP")) {
+        const m = /URI="([^"]+)"/.exec(line);
+        if (m) initSegmentUrl = new URL(m[1], baseUrl).href;
+        break;
+      }
+    }
+
+    // 6) Build the list of media-segment URLs
+    const segmentUrls = playlistText
+      .split("\n")
+      .filter((l) => l && !l.startsWith("#"))
+      .map((uri) =>
+        uri.startsWith("http") ? uri : new URL(uri, baseUrl).href
+      );
+    if (!segmentUrls.length) {
+      throw new Error("No media segments found in playlist");
+    }
+
+    // 7) Determine part-splitting
+    const userLimit = parseFloat(
       document.getElementById("video-segment-limit").value
     );
-    const MAX_SEGMENTS_PER_PART = videoSegmentLimit || DEFAULT_SEGMENT_LIMIT;
-
-    const totalParts = Math.ceil(segmentUrls.length / MAX_SEGMENTS_PER_PART);
+    const MAX_PER_PART = userLimit || DEFAULT_SEGMENT_LIMIT;
     const totalSegments = segmentUrls.length;
-    let segmentsDownloaded = 0;
+    const totalParts = Math.ceil(totalSegments / MAX_PER_PART);
+    let downloadedCount = 0;
 
+    //  - If URL is blob:, skip browser.downloads.download()
+    //    and do a hidden <a download> click instead.
+    async function startDownload(opts) {
+      const isBlob = opts.url.startsWith("blob:");
+      if (isBlob) {
+        console.warn("Firefox + blob URL → using <a download> fallback");
+        const a = document.createElement("a");
+        a.href = opts.url;
+        a.download = opts.filename || "";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return -1; // dummy ID
+      }
+
+      // Otherwise we can call the Firefox downloads API
+      return (browser.downloads || chrome.downloads).download(opts).catch((err) => {
+        console.warn("download API failed, falling back to <a>:", err);
+        const a = document.createElement("a");
+        a.href = opts.url;
+        a.download = opts.filename || "";
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return -1;
+      });
+    }
+
+    // 8) Loop over each part
     for (let part = 1; part <= totalParts; part++) {
-      const startIdx = (part - 1) * MAX_SEGMENTS_PER_PART;
-      const endIdx = Math.min(part * MAX_SEGMENTS_PER_PART, totalSegments);
-      const currentSegmentUrls = segmentUrls.slice(startIdx, endIdx);
+      const startIdx = (part - 1) * MAX_PER_PART;
+      const endIdx = Math.min(part * MAX_PER_PART, totalSegments);
+      const sliceUrls = segmentUrls.slice(startIdx, endIdx);
 
-      loadingIndicator.textContent = `Downloading part ${part} of ${totalParts} (${currentSegmentUrls.length} segments)...`;
+      loadingIndicator.textContent = `Downloading part ${part}/${totalParts} — ${sliceUrls.length} segments…`;
 
-      const arrayBuffers = [];
+      // collect Uint8Array chunks here
+      const tsChunks = [];
 
-      for (let i = 0; i < currentSegmentUrls.length; i++) {
-        const segmentUrl = currentSegmentUrls[i];
-        loadingIndicator.textContent = `Downloading part ${part}/${totalParts}: segment ${
-          i + 1
-        } of ${currentSegmentUrls.length}...`;
-
+      // 8a) fMP4 init-segment in part 1
+      if (part === 1 && initSegmentUrl) {
         try {
-          const segmentResponse = await fetch(segmentUrl, {
+          const initResp = await fetch(initSegmentUrl, {
             origin: video.origin ?? undefined,
             referrer: video.origin ?? undefined,
           });
-          if (!segmentResponse.ok) {
-            console.warn(
-              `Failed to fetch segment ${segmentUrl}: ${segmentResponse.statusText}`
-            );
+          if (initResp.ok) {
+            tsChunks.push(new Uint8Array(await initResp.arrayBuffer()));
+          } else {
+            console.warn("Failed to fetch init-segment:", initResp.status);
+          }
+        } catch (err) {
+          console.warn("Error fetching init-segment:", err);
+        }
+      }
+
+      // 8b) Download & decrypt each media segment
+      for (let i = 0; i < sliceUrls.length; i++) {
+        const segUrl = sliceUrls[i];
+        loadingIndicator.textContent = `Part ${part}/${totalParts}: segment ${
+          i + 1
+        }/${sliceUrls.length}`;
+        try {
+          const segResp = await fetch(segUrl, {
+            origin: video.origin ?? undefined,
+            referrer: video.origin ?? undefined,
+          });
+          if (!segResp.ok) {
+            console.warn("Segment fetch failed:", segUrl, segResp.status);
             continue;
           }
-
-          const buffer = await segmentResponse.arrayBuffer();
-          arrayBuffers.push(buffer);
-          segmentsDownloaded++;
-          // Update global download progress
-          globalDownloads[uniqueDownloadId].progress = Math.round(
-            (segmentsDownloaded / totalSegments) * 100
+          let buf = await segResp.arrayBuffer();
+          if (cryptoKey) {
+            buf = await crypto.subtle.decrypt(
+              { name: "AES-CBC", iv: ivBuf },
+              cryptoKey,
+              buf
+            );
+          }
+          tsChunks.push(new Uint8Array(buf));
+          downloadedCount++;
+          globalDownloads[uniqueId].progress = Math.round(
+            (downloadedCount / totalSegments) * 100
           );
           updateGlobalDownloadsUI();
         } catch (err) {
-          console.error(`Error fetching segment ${segmentUrl}: `, err);
+          console.error("Error downloading segment:", segUrl, err);
         }
       }
 
-      if (arrayBuffers.length === 0) {
-        console.error(
-          `No segments were successfully downloaded for part ${part}.`
-        );
+      if (!tsChunks.length) {
+        console.warn(`Part ${part} had no successful segments, skipping`);
         continue;
       }
 
-      const combinedBuffer = combineArrayBuffers(arrayBuffers);
-      const finalBlob = new Blob([combinedBuffer], { type: "video/mp4" });
-
-      let filename;
-      if (getUseUrlName()) {
-        filename = video.parentURLName;
-      } else {
-        filename = video.tabTitle;
-      }
-      if (totalParts > 1) {
-        filename += `_part${part}`;
-      }
-      filename += `.mp4`;
-      filename = cleanURL(filename, true);
-
-      if (filenameOverride) {
-        filenameOverride += `_${part}.mp4`;
+      // 9) Concatenate all Uint8Array chunks
+      let totalLen = tsChunks.reduce((sum, c) => sum + c.byteLength, 0);
+      let output = new Uint8Array(totalLen);
+      let offset = 0;
+      for (let chunk of tsChunks) {
+        output.set(chunk, offset);
+        offset += chunk.byteLength;
       }
 
+      // 10) Build the blob and URL
+      const blob = new Blob([output], { type: "video/MP2T" });
+      let downloadUrl = URL.createObjectURL(blob);
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 30_000);
+
+      // Build filename & path
+      let filename = cleanURL(video.tabTitle, true);
+      if (totalParts > 1) filename += `_part${part}`;
+      filename += ".ts";
+
+      let filenameOverride = getVideoFilenameOverride() || null;
+      let foldernameOverride = getVideoFoldernameOverride() || null;
       const folderName = foldernameOverride || "videos";
-      let downloadPath;
+      const downloadPath = filenameOverride
+        ? `${folderName}/${filenameOverride}`
+        : `${folderName}/${filename}`;
 
-      if (filenameOverride) {
-        downloadPath = `${folderName}/${filenameOverride}`;
-      } else {
-        downloadPath = `${folderName}/${filename}`;
-      }
+      // console.log(`Downloading part ${part} as ${downloadPath}`);
 
-      const objectUrl = URL.createObjectURL(finalBlob);
-      (browser.downloads || chrome.downloads).download(
-        {
-          url: objectUrl,
+      try {
+        await startDownload({
+          url: downloadUrl,
           filename: downloadPath,
           conflictAction: "uniquify",
-        },
-        (downloadId) => {
-          if (chrome.runtime && chrome.runtime.lastError) {
-            console.error(
-              "Download failed: ",
-              chrome.runtime.lastError.message
-            );
-          } else {
-            current.downloadId = downloadId;
-            current.progress = 100;
-            loadingIndicator.textContent = `Download complete for part ${part}!`;
-          }
-        }
-      );
-
-      setTimeout(() => {
-        URL.revokeObjectURL(objectUrl);
-      }, 10000);
-    }
-
-    // After finishing all parts, mark as complete
-    globalDownloads[uniqueDownloadId].progress = 100;
-    globalDownloads[uniqueDownloadId].state = "complete";
-    updateGlobalDownloadsUI();
-    loadingIndicator.textContent = "All parts downloaded!";
-  } catch (error) {
-    console.error("Error downloading m3u8 video: ", error);
-    globalDownloads[uniqueDownloadId].state = "interrupted";
-    updateGlobalDownloadsUI();
-  }
-}
-
-// Utility function to parse m3u8 playlist and extract segment URLs
-function parseM3U8Playlist(playlistText, baseUrl) {
-  const lines = playlistText.split("\n");
-  const segmentUrls = [];
-
-  const base = baseUrl.substring(0, baseUrl.lastIndexOf("/") + 1);
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith("#")) {
-      if (trimmed.startsWith("http")) {
-        segmentUrls.push(trimmed);
-      } else {
-        segmentUrls.push(new URL(trimmed, base).href);
+        });
+      } catch (dlErr) {
+        console.error("Download error:", dlErr);
       }
     }
+
+    // 11) All parts done → mark complete
+    globalDownloads[uniqueId].progress = 100;
+    globalDownloads[uniqueId].state = "complete";
+    updateGlobalDownloadsUI();
+    loadingIndicator.textContent = "All parts downloaded!";
+  } catch (err) {
+    console.error("downloadM3U8AsTS error:", err);
+    loadingIndicator.textContent = "Download interrupted!";
+    globalDownloads[uniqueId].state = "interrupted";
+    updateGlobalDownloadsUI();
   }
-
-  return segmentUrls;
-}
-
-// Utility function to combine multiple ArrayBuffers into one
-function combineArrayBuffers(arrayBuffers) {
-  let totalLength = 0;
-  for (const buffer of arrayBuffers) {
-    totalLength += buffer.byteLength;
-  }
-
-  const combined = new Uint8Array(totalLength);
-  let offset = 0;
-  for (const buffer of arrayBuffers) {
-    combined.set(new Uint8Array(buffer), offset);
-    offset += buffer.byteLength;
-  }
-
-  return combined.buffer;
 }
 
 (browser.downloads || chrome.downloads).onChanged.addListener((delta) => {
@@ -972,7 +1010,7 @@ async function downloadFullMultipartVideo(video, current, options = {}) {
         }
         setTimeout(() => {
           URL.revokeObjectURL(objectUrl);
-        }, 10000);
+        }, 30000);
       }
     );
 
@@ -1144,19 +1182,21 @@ const downloadAllVideoBtn = document.getElementById(
   "download-all-videos-button"
 );
 
-downloadAllVideoBtn.addEventListener("click", async () => {
-  // Grab the container that holds all of our video entries
-  const videosSection = document.getElementById("videos-list");
-  if (!videosSection) {
-    return;
-  }
+if (downloadAllVideoBtn) {
+  downloadAllVideoBtn.addEventListener("click", async () => {
+    // Grab the container that holds all of our video entries
+    const videosSection = document.getElementById("videos-list");
+    if (!videosSection) {
+      return;
+    }
 
-  const downloadButtons = videosSection.querySelectorAll(".download-btn");
+    const downloadButtons = videosSection.querySelectorAll(".download-btn");
 
-  for (const btn of downloadButtons) {
-    await new Promise((r) => {
-      btn.addEventListener("click", () => r(), { once: true });
-      btn.click();
-    });
-  }
-});
+    for (const btn of downloadButtons) {
+      await new Promise((r) => {
+        btn.addEventListener("click", () => r(), { once: true });
+        btn.click();
+      });
+    }
+  });
+}
