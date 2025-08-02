@@ -495,6 +495,10 @@ async function downloadVideo(video, current) {
 // downloadM3U8AsTS: handles optional AES-128 decryption, fMP4 init maps, segment-splitting,
 // and uses a Firefox-safe fallback for blob URLs via an <a download> click.
 async function downloadM3U8AsTS(video, current) {
+  let filename = cleanURL(video.tabTitle, true);
+  let filenameOverride = getVideoFilenameOverride() || null;
+  let foldernameOverride = getVideoFoldernameOverride() || null;
+
   const url = video.url;
   const loadingIndicator = current.loadingIndicator;
 
@@ -600,17 +604,19 @@ async function downloadM3U8AsTS(video, current) {
       }
 
       // Otherwise we can call the Firefox downloads API
-      return (browser.downloads || chrome.downloads).download(opts).catch((err) => {
-        console.warn("download API failed, falling back to <a>:", err);
-        const a = document.createElement("a");
-        a.href = opts.url;
-        a.download = opts.filename || "";
-        a.style.display = "none";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        return -1;
-      });
+      return (browser.downloads || chrome.downloads)
+        .download(opts)
+        .catch((err) => {
+          console.warn("download API failed, falling back to <a>:", err);
+          const a = document.createElement("a");
+          a.href = opts.url;
+          a.download = opts.filename || "";
+          a.style.display = "none";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          return -1;
+        });
     }
 
     // 8) Loop over each part
@@ -695,12 +701,9 @@ async function downloadM3U8AsTS(video, current) {
       setTimeout(() => URL.revokeObjectURL(downloadUrl), 30_000);
 
       // Build filename & path
-      let filename = cleanURL(video.tabTitle, true);
       if (totalParts > 1) filename += `_part${part}`;
       filename += ".ts";
 
-      let filenameOverride = getVideoFilenameOverride() || null;
-      let foldernameOverride = getVideoFoldernameOverride() || null;
       const folderName = foldernameOverride || "videos";
       const downloadPath = filenameOverride
         ? `${folderName}/${filenameOverride}`
