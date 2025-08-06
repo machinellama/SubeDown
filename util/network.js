@@ -703,6 +703,9 @@ async function downloadM3U8AsTS(video, current) {
       // Build filename & path
       if (totalParts > 1) filename += `_part${part}`;
       filename += ".ts";
+      if (filenameOverride) {
+        filenameOverride += ".ts";
+      }
 
       const folderName = foldernameOverride || "videos";
       const downloadPath = filenameOverride
